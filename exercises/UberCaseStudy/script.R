@@ -1,6 +1,7 @@
 # Uber - Supply Demand Gap
 # Learning Outcome: EDA & Visualisation
 # Expected output: R file & presentation in PDF format (zip together)
+# Author: Poovarasan
 
 # Objective:
 # ----------
@@ -9,13 +10,6 @@
 # 1. root cause analysis
 # 2. possible hypothesis
 # 3. recommand ways to improve
-
-# Business understanding:
-# --------------------------
-#
-#
-
-# TODO::::: Create dashboard for the plots
 
 # install depenencies (One time execution)
   install.packages('ggplot2')
@@ -33,17 +27,6 @@
 # -------------------------
   trips <- read.csv('Uber Request Data.csv', stringsAsFactors = F)
 
-# ------------------
-# Data understanding
-# ------------------
-# Attributes -
-# 1. request id - unique id of request
-# 2. time of request - 
-# 3. drop off time
-# 4. pick up point
-# 5. driver id
-# 6. status of request - complete/cancelled/no cabs
-
 # Data set contains only July 2016 trips
 # Observastions contains only the City - Airport & vice versa trips
 
@@ -54,49 +37,109 @@
 # --------------------------
 # EDA Step-2: Data cleaning:
 # --------------------------
-
-  # 2a. Fix rows: - All rows are valid - no cleaning required
   
-  # 2b. Fix missing values: - NA
+  # I. Fix rows: NA (All rows are already cleaned)
   
-  # 2c. Standardise values:
-  # Standardise Request timestamp & Drop timestamp date formats
-    formatDateTime <- function(variable)
-    {
+  # II. Fix columns:
+    # a. Add column names if missing - NA
+    # b. Rename columns consistently - NA
+    # c. Delete unnecessary columns - NA
+    # e. Split columns for more data - formatting Request.timestamp & Drop.timestamp first & splitting them to date, weekday, time etc
+    # f. Merge columns for identifiers - NA
+    # g. Align misaligned columns -formatting the Request.timestamp & Drop.timestamp will automatically aligns these columns
+  
+  # III. Fix missing values: NA (No missing values except the Drop.timestamp, but Drop.timestamp has NAs only for cancelled/no cars available rows)
+  
+  # IV. Standardise values:
+    # a. check outliers & remove them
+  
+  # V. Correct invalid values & derive new variables: 
+    # a. Format Request timestamp & Drop timestamp date formats
+      formatDateTime <- function(variable)
+      {
+        
+        # standardise the format of date string (day, month, year separators)
+        variable <- gsub(variable, pattern = '-', replacement = '/')
+        
+        # format date time
+        variable <- strptime(variable, '%d/%m/%Y %H:%M')
+        return (as.POSIXct(variable))
+      }
       
-      # standardise the format of date string (day, month, year separators)
-      variable <- gsub(variable, pattern = '-', replacement = '/')
+      trips$Request.timestamp <- formatDateTime(trips$Request.timestamp)
+      trips$Drop.timestamp <- formatDateTime(trips$Drop.timestamp)
       
-      # format date time
-      variable <- strptime(variable, '%d/%m/%Y %H:%M')
-      return (as.POSIXct(variable))
-    }
     
-    trips$Request.timestamp <- formatDateTime(trips$Request.timestamp)
-    trips$Drop.timestamp <- formatDateTime(trips$Drop.timestamp)
-    
-    # Standardise trips status into (Completed, Cancelled, No Cars Available)
-    trips$Status <- trimws(gsub(trips$Status, pattern = 'Trip', replacement = ''))
-  
-  # 2d. Fix columns:
-  # Split Request.timestamp & Drop.timestamp into Request.date, Request.day, Request.time,
-  # Drop.time (Drop.date, Drop.day are not required)
-    
-    #trips$Request.year <- format(trips$Request.timestamp, '%Y') - data is only for 2016 year
-    #trips$Request.month <- format(trips$Request.timestamp, '%B') - data is only for July month
-    trips$Request.day <- format(trips$Request.timestamp, '%A')
-    trips$Request.time <- format(trips$Request.timestamp, '%H:%M')
-    trips$Request.hour <- as.integer(format(trips$Request.timestamp, '%H'))
-    
-    trips$Drop.time <- format(trips$Drop.timestamp, '%H:%M')
-    
-  # 2e. Remove outliers
+    # b. Derive new variables (Split columns into multiple columns for more insights)
+    # Split Request.timestamp & Drop.timestamp into Request.date, Request.day, Request.time etc.
+      
+      trips$Request.date <- format(trips$Request.timestamp, '%Y/%m/%d')
+      trips$Request.day <- format(trips$Request.timestamp, '%A')
+      trips$Request.time <- format(trips$Request.timestamp, '%H:%M')
+      trips$Request.hour <- as.integer(format(trips$Request.timestamp, '%H'))
+      
+      trips$Drop.time <- format(trips$Drop.timestamp, '%H:%M')
+      trips$Drop.hour <- format(trips$Drop.timestamp, '%H')
+      
+      trips$Approx.travel.time <- round(difftime(trips$Drop.timestamp, trips$Request.timestamp, units = 'hours'), 2)
+      
+    # Create time slot variable
+    # Assumption for time slots made from the following link
+    # reference: http://www.angelfire.com/pa/pawx/time.html
+      
+      # 12AM - 2AM, 2AM - 4AM, 4AM - 6AM, 6AM - 8AM, 8AM - 10AM, 10AM - Noon
+      #, 12PM - 2PM, 2PM - 4PM, 4PM - 6PM, 6PM - 8PM, 8PM - 10PM, 10PM - Midnight
+      time_slopts <- c('Early overnight','Mid overnight','Late overnight','Early morning','Mid morning','Late morning'
+                       ,'Early afternoon','Mid afternoon','Late afternoon','Early evening','Mid evening','Late evening')
+      
+      trips$Request.time_slot <- sapply(trips$Request.hour, function(hr) {
+        index = ceiling(hr/2)
+        if(index == 0) {
+          index = 1
+        }
+        return(time_slopts[index])
+      })
   
 
 # -------------------------------
 # EDA Step-3: Univariate analysis
 # -------------------------------
-
+    # a. Metadata description
+      # 1.Request id: A unique identifier of the request
+      # Time of request: The date and time at which the customer made the trip request
+      # Drop-off time: The drop-off date and time, in case the trip was completed 
+      # Pick-up point: The point from which the request was made
+      # Driver id: The unique identification number of the driver
+      # Status of the request: The final status of the trip, that can be either completed, cancelled by the driver or no cars available
+      
+    # b. Identify types of variables - identify ordered, unordered categorical variables & quantitative variables
+      # Unordered categorical variables = Pickup.point, Status, Request.day
+      # Ordered categorical variables = Request.timestamp, Drop.timestamp and all of the derived variables from these two variables
+      # quantitative variables = Driver.id & Request.id
+      
+    # b. Data distribution plots
+      # Unordered categorical variables - univariate analysis
+        # Pickup.point univariate analysis
+          request_type_univariate_analysis <- trips %>% group_by(Pickup.point) %>% summarise(requests = length(Pickup.point))
+          ggplot(request_type_univariate_analysis, aes(Pickup.point, requests)) + geom_bar(stat='identity')
+          
+        # Status univariate analysis
+          status_univariate_analysis <- trips %>% group_by(Status) %>% summarise(requests = length(Status))
+          ggplot(status_univariate_analysis, aes(Status, requests)) + geom_bar(stat='identity')
+          
+        # Request.day univariate analysis
+          Request.day_univariate_analysis <- trips %>% group_by(Request.day) %>% summarise(requests = length(Request.day))
+          ggplot(Request.day_univariate_analysis, aes(Request.day, requests)) + geom_bar(stat='identity')
+          
+      # Ordered categorical variables - univariate analysis
+          # Request.timestamp
+            Request.timestamp_univariate_analysis <- trips %>% group_by(Request.timestamp) %>% summarise(requests = length(Request.timestamp))
+            ggplot(Request.timestamp_univariate_analysis, aes(Request.timestamp, requests)) + geom_line()
+            
+          # Request.date
+            Request.date_univariate_analysis <- trips %>% group_by(Request.date) %>% summarise(requests = length(Request.date))
+            ggplot(Request.date_univariate_analysis, aes(Request.date, requests)) + geom_bar(stat='identity')
+        
 
 # -------------------------------
 # EDA Step-4: Segmented analysis
@@ -112,37 +155,13 @@
 # ---------------------------
 
 
-  trips$ApproxTravelTime <- round(difftime(trips$Drop.timestamp, trips$Request.timestamp, units = 'hours'), 2)
-
-  # Assumption for parts of the day
-  # reference: http://www.angelfire.com/pa/pawx/time.html
-  # describe here
-  trips$Request.hour_string <- sapply(trips$Request.hour, function(hr)
-  {
-    parts_of_day <- c('Early overnight','Mid overnight','Late overnight','Early morning','Mid morning','Late morning'
-                      ,'Early afternoon','Mid afternoon','Late afternoon','Early evening','Mid evening','Late evening')
-    if(is.integer(hr)) {
-      index = ceiling(hr/2)
-      if(index == 0) {
-        index = 1
-      }
-      return(parts_of_day[index])
-    } else {
-      return(NA)
-    }
-  })
-
-  # Drop hour variable
-  trips <- trips[, !(names(trips) %in% c('Request.hour'))]
-
-
 # --------------------
 # 4. Results expected:
 # --------------------
   # 1. visually identify the most pression problems
     # Identify the most problamatic type of requests - City to Airport OR Airport to City?
-      airtport2city_trips <- trips[trips$Pickup.point == 'Airport' & trips$Status != 'Completed', ]
-      city2airport_trips <- trips[trips$Pickup.point == 'City' & trips$Status != 'Completed', ]
+      airtport2city_trips <- trips[trips$Pickup.point == 'Airport' & trips$Status != 'Trip Completed', ]
+      city2airport_trips <- trips[trips$Pickup.point == 'City' & trips$Status != 'Trip Completed', ]
     # a. No Cars Available
     # b. Cancelled trips
       airtport2city_trips_summary <- airtport2city_trips %>% group_by(Status) %>% summarise(TripsCount = length(Status))
