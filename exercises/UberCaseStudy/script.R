@@ -120,16 +120,37 @@
     # b. Data distribution plots
       # Unordered categorical variables - univariate analysis
         # Pickup.point univariate analysis
-          request_type_univariate_analysis <- trips %>% group_by(Pickup.point) %>% summarise(requests = length(Pickup.point))
-          ggplot(request_type_univariate_analysis, aes(Pickup.point, requests)) + geom_bar(stat='identity')
+          trips_count_by_Pickup.point <- trips %>% 
+            count(Pickup.point) %>%
+            mutate(freq = round(n / sum(n), digits = 4) * 100)
+          colnames(trips_count_by_Pickup.point) <- c('Pickup.point', 'Count', 'Percentage')
           
         # Status univariate analysis
-          status_univariate_analysis <- trips %>% group_by(Status) %>% summarise(requests = length(Status))
-          ggplot(status_univariate_analysis, aes(Status, requests)) + geom_bar(stat='identity')
+          trips_count_by_Status  <- trips %>% 
+            count(Status) %>%
+            mutate(freq = round(n / sum(n), digits = 4) * 100)
+          colnames(trips_count_by_Status) <- c('Status', 'Count', 'Percentage')
           
         # Request.day univariate analysis
-          Request.day_univariate_analysis <- trips %>% group_by(Request.day) %>% summarise(requests = length(Request.day))
-          ggplot(Request.day_univariate_analysis, aes(Request.day, requests)) + geom_bar(stat='identity')
+          trips_count_by_Request.day <- trips %>% 
+            count(Request.day) %>%
+            mutate(freq = round(n / sum(n), digits = 4) * 100)
+          colnames(trips_count_by_Request.day) <- c('Request.day', 'Count', 'Percentage')
+          # Possible hypotheses (All day having nearly same percentage of requests)
+          
+        # Request.time_slot univariate analysis
+          trips_count_Request.time_slot <- trips %>% 
+            count(Request.time_slot) %>%
+            mutate(freq = round(n / sum(n), digits = 4) * 100)
+          colnames(trips_count_Request.time_slot) <- c('Request.time_slot', 'Count', 'Percentage')
+          trips_count_Request.time_slot <- trips_count_Request.time_slot[order(trips_count_Request.time_slot$Percentage), ]
+          
+        # Request.hour univariate analysis
+          trips_count_by_Request.hour <- trips %>% 
+            count(Request.hour) %>%
+            mutate(freq = round(n / sum(n), digits = 4) * 100)
+          colnames(trips_count_by_Request.hour) <- c('Request.hour', 'Count', 'Percentage')
+          trips_count_by_Request.hour <- trips_count_by_Request.hour[order(trips_count_by_Request.hour$hour), ]
           
       # Ordered categorical variables - univariate analysis
           # Request.timestamp
@@ -138,7 +159,6 @@
             
           # Request.date
             Request.date_univariate_analysis <- trips %>% group_by(Request.date) %>% summarise(requests = length(Request.date))
-            ggplot(Request.date_univariate_analysis, aes(Request.date, requests)) + geom_bar(stat='identity')
         
 
 # -------------------------------
