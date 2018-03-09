@@ -15,12 +15,12 @@
   install.packages('ggplot2')
   install.packages('dplyr')
   install.packages('tidyr')
-  install.packages('chron')
 
 # load packages
   library('dplyr')
   library('tidyr')
   library('ggplot2')
+  
 
 # -------------------------
 # EDA Step-1: Data Sourcing
@@ -83,6 +83,9 @@
       
       trips$Approx.travel.time <- round(difftime(trips$Drop.timestamp, trips$Request.timestamp, units = 'hours'), 2)
       
+      # To keep the bar chart sorted
+      trips$Request.day <- factor(trips$Request.day, levels = c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday"))
+      
     # Create time slot variable
     # Assumption for time slots made from the following link
     # reference: http://www.angelfire.com/pa/pawx/time.html
@@ -92,13 +95,22 @@
       time_slopts <- c('Early overnight','Mid overnight','Late overnight','Early morning','Mid morning','Late morning'
                        ,'Early afternoon','Mid afternoon','Late afternoon','Early evening','Mid evening','Late evening')
       
-      trips$Request.time_slot <- sapply(trips$Request.hour, function(hr) {
+      trips$Request.time_slot <- sapply(trips$Request.hour, function(hr)
+      {
         index = ceiling(hr/2)
-        if(index == 0) {
+        if (index == 0) 
+        {
           index = 1
         }
         return(time_slopts[index])
       })
+      
+      trips$Request.time_slot <- factor(trips$Request.time_slot, levels = c('Early morning','Mid morning',
+                                                                            'Late morning', 'Early afternoon',
+                                                                            'Mid afternoon','Late afternoon',
+                                                                            'Early evening', 'Mid evening',
+                                                                            'Late evening', 'Early overnight',
+                                                                            'Mid overnight', 'Late overnight'))
   
 
 # -------------------------------
@@ -113,53 +125,49 @@
       # Status of the request: The final status of the trip, that can be either completed, cancelled by the driver or no cars available
       
     # b. Identify types of variables - identify ordered, unordered categorical variables & quantitative variables
-      # Unordered categorical variables = Pickup.point, Status, Request.day
+      # Unordered categorical variables = Pickup.point, Status
       # Ordered categorical variables = Request.timestamp, Drop.timestamp and all of the derived variables from these two variables
       # quantitative variables = Driver.id & Request.id
       
     # b. Data distribution plots
       # Unordered categorical variables - univariate analysis
-        # Pickup.point univariate analysis
-          trips_count_by_Pickup.point <- trips %>% 
-            count(Pickup.point) %>%
-            mutate(freq = round(n / sum(n), digits = 4) * 100)
-          colnames(trips_count_by_Pickup.point) <- c('Pickup.point', 'Count', 'Percentage')
-          
-        # Status univariate analysis
-          trips_count_by_Status  <- trips %>% 
-            count(Status) %>%
-            mutate(freq = round(n / sum(n), digits = 4) * 100)
-          colnames(trips_count_by_Status) <- c('Status', 'Count', 'Percentage')
-          
-        # Request.day univariate analysis
-          trips_count_by_Request.day <- trips %>% 
-            count(Request.day) %>%
-            mutate(freq = round(n / sum(n), digits = 4) * 100)
-          colnames(trips_count_by_Request.day) <- c('Request.day', 'Count', 'Percentage')
-          # Possible hypotheses (All day having nearly same percentage of requests)
-          
-        # Request.time_slot univariate analysis
-          trips_count_Request.time_slot <- trips %>% 
-            count(Request.time_slot) %>%
-            mutate(freq = round(n / sum(n), digits = 4) * 100)
-          colnames(trips_count_Request.time_slot) <- c('Request.time_slot', 'Count', 'Percentage')
-          trips_count_Request.time_slot <- trips_count_Request.time_slot[order(trips_count_Request.time_slot$Percentage), ]
-          
-        # Request.hour univariate analysis
-          trips_count_by_Request.hour <- trips %>% 
-            count(Request.hour) %>%
-            mutate(freq = round(n / sum(n), digits = 4) * 100)
-          colnames(trips_count_by_Request.hour) <- c('Request.hour', 'Count', 'Percentage')
-          trips_count_by_Request.hour <- trips_count_by_Request.hour[order(trips_count_by_Request.hour$hour), ]
-          
-      # Ordered categorical variables - univariate analysis
-          # Request.timestamp
-            Request.timestamp_univariate_analysis <- trips %>% group_by(Request.timestamp) %>% summarise(requests = length(Request.timestamp))
-            ggplot(Request.timestamp_univariate_analysis, aes(Request.timestamp, requests)) + geom_line()
-            
-          # Request.date
-            Request.date_univariate_analysis <- trips %>% group_by(Request.date) %>% summarise(requests = length(Request.date))
+      
+      # Draws bar chart having x = categorical variable, y = frequency in percentage
+      drawUnivariatePlot <- function (variable, x_label, y_label = 'Freqency(%)', x_lbl_breaks = NA)
+      {
+        plot <- ggplot(trips, aes(variable)) +
+          scale_y_continuous(labels = scales::percent) +
+          ylab(y_label) +
+          xlab(x_label) +
+          theme(axis.text.x = element_text(angle = 10))
         
+        if(!is.na(x_lbl_breaks))
+        {
+          plot <- plot + scale_x_discrete(breaks = x_lbl_breaks)
+        }
+        plot + geom_bar(aes(y = (..count../sum(..count..))), width = 0.8)
+      }
+      
+      drawUnivariatePlot(trips$Pickup.point, 'Pickup.point')
+      drawUnivariatePlot(trips$Status, 'Status')
+      drawUnivariatePlot(trips$Request.date, 'Request date')
+      
+      # Possible hypotheses (All day having nearly same percentage of requests)
+      drawUnivariatePlot(trips$Request.day, 'Request Day')
+      
+      drawUnivariatePlot(trips$Request.time_slot, 'Time slot')
+      drawUnivariatePlot(trips$Request.hour, 'Request hour')
+      
+      # For 30mins interval
+      #ggplot(trips, aes(Request.hour)) +
+      #  xlab('Request hour') +
+      #  ylab('Frequency') +
+      #  geom_bar(stat='count', width = 0.8)
+      
+      ggplot(trips, aes(Driver.id)) +
+        xlab('Driver id') +
+        ylab('Frequency') +
+        geom_bar(stat='count', width = 0.4)
 
 # -------------------------------
 # EDA Step-4: Segmented analysis
@@ -178,38 +186,32 @@
 # --------------------
 # 4. Results expected:
 # --------------------
-  # 1. visually identify the most pression problems
+  # 1. visually identify the most pressing problems
     # Identify the most problamatic type of requests - City to Airport OR Airport to City?
-      airtport2city_trips <- trips[trips$Pickup.point == 'Airport' & trips$Status != 'Trip Completed', ]
-      city2airport_trips <- trips[trips$Pickup.point == 'City' & trips$Status != 'Trip Completed', ]
-    # a. No Cars Available
-    # b. Cancelled trips
-      airtport2city_trips_summary <- airtport2city_trips %>% group_by(Status) %>% summarise(TripsCount = length(Status))
-      city2airport_trips_summary <- city2airport_trips %>% group_by(Status) %>% summarise(TripsCount = length(Status))
+      trips %>%
+        filter(Status != 'Trip Completed') %>%
+        ggplot(aes(Pickup.point, fill=Status)) + geom_bar() + geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust=0.5))
     
     # Identify the time slots of cancelled trips
-    # a. No Cars Available
-    # b. Cancelled trips
-      airtport2city_trips_timeslots <- airtport2city_trips %>% 
-        group_by(Request.hour_string, Status) %>%
-        summarise(TripsCount = length(Request.hour_string))
-      
-      city2airport_trips_timeslots <- city2airport_trips %>%
-        group_by(Request.hour_string, Status) %>%
-        summarise(TripsCount = length(Request.hour_string))
-      
-      # todo: show in percentage/percentile
-      # can we show airport - city, city - airport in same plot?
-      ggplot(airtport2city_trips_timeslots, aes(x=Request.hour_string, y=TripsCount, fill=Status)) + geom_bar(stat='identity')
-    
-    # Identify the time slots of No Cars Available
-    # a. No Cars Available
-    # b. Cancelled trips
+      trips %>%
+        filter(Status != 'Trip Completed') %>%
+        ggplot(aes(Request.time_slot, fill=Status)) + geom_bar()
   
   
   # 2. find out gap between supply and demand & show them using plots
     # Find the time slots when the highest gap exists
+      trips %>%
+        ggplot(aes(Request.time_slot, fill=Status)) + geom_bar() +
+        geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust=0.5))
+      
     # Find the types of requests (city-airport or airport-city) for which the gap is the most severe in the identified time slots
+      trips %>%
+        ggplot(aes(Status)) + geom_bar() +
+        facet_wrap(~Pickup.point)
+      # OR
+      ggplot(trips, aes(x=Pickup.point, fill=Status)) +   
+        geom_bar(position='stack', stat='count') +
+        geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust=0.5))
   
   # 3. what do you think the reason for the issue - supply demand? describe in words with plot
   
