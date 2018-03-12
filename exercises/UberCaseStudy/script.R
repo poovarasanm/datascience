@@ -27,6 +27,7 @@
 # -------------------------
 # EDA Step-1: Data Sourcing
 
+  # Please keep the "Uber Request Data.csv" file at the same location of this script & set the working directory manually
   trips <- read.csv('Uber Request Data.csv', stringsAsFactors = F)
 
   # Data set contains only July 2016 trips
@@ -208,7 +209,7 @@
       # Find the types of requests (city-airport or airport-city) for which the gap is the most severe in the identified time slots
       problematic_time_slots <- c('Late night', 'Early morning', 'Morning', 'Evening', 'Late evening', 'Early night')
       trips %>%
-        filter(Request.time_slot %in%  problematic_time_slots & Status != 'Trip Completed') %>%
+        filter(Request.time_slot %in%  problematic_time_slots) %>%
         ggplot(aes(x=Pickup.point, fill=Status)) +   
         geom_bar(position='stack', stat='count') +
         geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust=0.5)) +
@@ -229,8 +230,5 @@
         xlab("Driver id") +
         geom_bar(stat='count') +
         geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust=0.5))
-      
 
-# ---------------------------
-# EDA Step-6: Derived metrics
-# ---------------------------
+      
