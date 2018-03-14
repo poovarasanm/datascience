@@ -1,0 +1,32 @@
+supervised learning
+generalisation
+classification problem (categorical data)
+regression problem (numbers)
+unsupervised learning - ANN
+
+how brain works - simple way
+batch learning & online learning
+computationally modeling brain
+	H(v) - activation function - Heaviside step function
+	neuron, synapsis, connections
+
+computational model of neuron
+	input vector x
+	weight vector w
+	bias b
+	w * x - weighted sum (multiplication of input & weight vector)
+	b - threshold that the neuorn surpass to fire or not
+	v = w * x + b
+
+	H(v) = Heaviside step function = H(w * x + b)
+	if >= 0, then fires
+	if < 0, then no
+
+	w * x + b = 0 decision boundary
+
+	human brain always give 1 or 0
+
+	use universal approximation theoram to produce the continuous function
+	- sigmoid
+	- hyperbolic tangent
+	- rectifier
