@@ -1,0 +1,2 @@
+27/3/18 - Kubernetes introduction - https://youtu.be/4ht22ReBjno
+28/3/18 - Power law, zipf's law & preferential attachment - https://www.youtube.com/watch?v=fCn8zs912OE
