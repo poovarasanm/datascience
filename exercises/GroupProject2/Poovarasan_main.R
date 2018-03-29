@@ -204,5 +204,39 @@
                           "total_received_interest", "total_received_late_fee",
                           "recoveries", "collection_recovery_fee", "last_payment_date", "last_payment_amount", "next_payment_date",
                           "last_credit_pull_date", "public_record_bankruptcies")
+      
+#### 3a. Data analysis - define flow of analysis ####
+    # I.univariate analysis
+    # II. bivariate analysis
+    # III. segmented analysis
+    # IV. derive metrics
+    # All above should be done with the 2 considerations of two risks (1. losing business, 2. losing finance)
+      
+#### 3b. Univariate analysis ####
+      drawCategoricalUnivariatePlot <- function (variable, x_label, y_label = 'Freqency(%)', fill_color = 'orange')
+      {
+        plot <- ggplot(loan, aes(variable)) +
+          scale_y_continuous(labels = scales::percent) +
+          ylab(y_label) +
+          xlab(x_label) +
+          theme(axis.text.x = element_text(angle = 10))
+        
+        plot + geom_bar(aes(y = (..count../sum(..count..))), width = 0.7, fill = fill_color)
+      }
+    # I. categorical variable analysis
+      drawCategoricalUnivariatePlot(loan$payment_term_months, 'Payment term( months)')
+      drawCategoricalUnivariatePlot(loan$grade, 'LC assigned grade', 'Percentage', 'green')
+      drawCategoricalUnivariatePlot(loan$sub_grade, 'LC assigned sub grade', 'Percentage', 'blue')
+      # drawCategoricalUnivariatePlot(loan$emp_job_title, 'Job title', 'Percentage')
+      drawCategoricalUnivariatePlot(loan$employment_length, 'Employment length(years)', 'Percentage', 'purple')
+      drawCategoricalUnivariatePlot(loan$home_ownership, 'Home ownership', 'Percentage', 'magenta')
+      drawCategoricalUnivariatePlot(loan$verification_status, 'Verification status', 'Percentage', 'red')
+      drawCategoricalUnivariatePlot(loan$loan_status, 'Loan status', 'Percentage', 'yellow')
+      drawCategoricalUnivariatePlot(loan$purpose, 'Loan purpose', 'Percentage', 'maroon')
+      drawCategoricalUnivariatePlot(loan$address_state, 'Borrower state', 'Percentage', 'skyblue')
+      
+      ## TODO: Create function to get the actual counts
+      
+      ## TODO: employment length - NA - decide value based on the other details???
 
       
