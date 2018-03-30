@@ -35,3 +35,4 @@ segmented analysis
 	next_payment_date
 	last_credit_pull_date
 	earliest_credit_line
+# 6.37, 

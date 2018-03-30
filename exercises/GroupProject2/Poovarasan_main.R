@@ -1,4 +1,5 @@
 ##### EDA Case Study: ##### 
+  # R version               : 3.4.4
   #   Client                : lendingclub.com
   #   Analytics team        : Jayakumar, Pranesh, Chaitanya, Poovarasan
   #   Learning outcome      : EDA, basic understaning of Risk analytics in banking & how data used to minimise the risk of
@@ -31,6 +32,7 @@
   # *** OBJECTIVE: Derive the factors behind the loan default.
 
 #### Data understanding ####
+  ## Metadata description
   # Description: Each row contains the information of the accepted loan( fully paid, current or charged off) & the borrower information.
   # 1. Borrower's id, address, job & income details.
   # 2. Borrower's delinquency information, credit line, public record details
@@ -42,10 +44,12 @@
   install.packages('dplyr')
   install.packages('tidyr')
   install.packages('ggplot2')
+  install.packages('data.table')
   
   library('ggplot2')
   library('dplyr')
   library('tidyr')
+  library('data.table')
   
 #### Load data ####
   loan <- read.csv('loan.csv', stringsAsFactors = F) # stringsAsFactor=F, so charactor column can be formatted then it can be converted to factor
@@ -207,7 +211,8 @@
                           "next_payment_date", "last_credit_pull_date")
       
     # 2l. Filter data for analysis
-      # TODO:::::::::::::::::::
+      # Let's remove current status loans
+      loan <- subset(loan, loan_status != 'Current')
       
 #### 3a. Data analysis - define flow of analysis ####
     # I.univariate analysis
@@ -303,16 +308,60 @@
         # 8. total payment, received principal, last payment amount follows same level of distribution (gradually decreases)
       
 #### 3c. I. Bivariate analysis ####
-    # 1. Grade vs delinq_2years
-      loan %>% ggplot()
-    # 2. Grade vs verification_status
-    # 3. Grade vs loan_status
-    # 4. Grade vs inqquires_in_last_6months
-    # 5. Grade vs funded_amount
-    # 6. Grade vs interest_rate
-    # 7. Grade vs debt_to_incom_ratio
-    # 8. Grade vs revolving_balance
-    # 9. Grade vs total_payment
+    # Grade vs verification_status
+      loan %>% ggplot(aes(loan$grade, fill=loan$verification_status)) + geom_bar() +
+        geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust=0.5))
+      # -- Based on the Grade, verification status changs(A, B & C has less verification, other grades has more verification)
+      # so let's see if it is same for sub grade
+    # Sub grade vs verification status
+      loan %>% ggplot(aes(loan$sub_grade, fill=loan$verification_status)) + geom_bar() +
+        geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust=0.5))
+    # Grade vs loan_status
+      loan %>% ggplot(aes(loan$grade, fill=loan$loan_status)) + geom_bar() +
+        geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust=0.5))
+      # Looks like Grade level linked to the Charged off count. ie, when grade level decreases, charged off count increases
+      # So, negative correlation found between grade & charged off count
+      # let's find the exact ratio between fully charged & charged off for each grades
+      grade_loan_status <- loan %>% group_by(grade, loan_status) %>% summarise(count = n())
+      grade_loan_status$loan_status <- as.factor(grade_loan_status$loan_status)
+      dcast(setDT(grade_loan_status), formula = grade ~ loan_status, value.var = 'count')[, percentage:= round((`Charged Off`/`Fully Paid`)*100, digits=2)][]
+      # grade Charged Off Fully Paid percentage
+      # 1:     A         602       9443       6.38
+      # 2:     B        1425      10250      13.90
+      # 3:     C        1347       6487      20.76
+      # 4:     D        1118       3967      28.18
+      # 5:     E         715       1948      36.70
+      # 6:     F         319        657      48.55
+      # 7:     G         101        198      51.01
+      # If grade decreases, rise in the charged off count
+      
+    # Sub grade vs loan_status
+      loan %>% ggplot(aes(loan$sub_grade, fill=loan$loan_status)) + geom_bar() +
+        geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust=0.5))
+      # same distribution as grade for the loan status
+      
+    # Grade vs inqquires_in_last_6months
+      loan %>% ggplot(aes(loan$grade, fill=loan$inqquires_in_last_6months)) + geom_bar() +
+        geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust=0.5))
+      
+    # Grade vs funded_amount
+      boxplot(loan$funded_amount ~ loan$grade)
+    # Grade vs interest_rate
+      boxplot(loan$interest_rate ~ loan$grade)
+    # Grade vs debt_to_incom_ratio
+      boxplot(loan$debt_to_incom_ratio ~ loan$grade) # same for all grades
+    # Grade vs revolving_balance
+      boxplot(loan$revolving_balance ~ loan$grade)
+    # Grade vs total_payment
+      boxplot(loan$total_payment ~ loan$grade)
+      
+    # employment_length vs loan_status
+      loan %>% ggplot(aes(loan$employment_length, fill=loan$loan_status)) + geom_bar() +
+        geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust=0.5))
+    
+    # employment_length vs inqquires_in_last_6months
+      loan %>% ggplot(aes(loan$employment_length, fill=loan$inqquires_in_last_6months)) + geom_bar() +
+        geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust=0.5))
       
 #### 3c. II. Multivariate analysis ####
       
