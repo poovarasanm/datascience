@@ -1,0 +1,37 @@
+ordered categorical variables
+	payment_term_months
+	grade
+	sub_grade
+	employment_length
+	purpose
+	delinq_2years
+	inqquires_in_last_6months
+	open_accounts
+
+unordered categorical variables
+	emp_job_title
+	home_ownership
+	verification_status
+	loan_status
+	address_state
+
+continuous variables
+	loan_amount
+	funded_amount
+	interest_rate
+	installment_amount
+    annual_income
+	debt_to_incom_ratio
+	revolving_balance
+	revolving_utilization_rate
+	total_payment
+	total_received_principal
+	total_received_interest
+	last_payment_amount
+
+segmented analysis
+	issue_date
+	last_payment_date
+	next_payment_date
+	last_credit_pull_date
+	earliest_credit_line

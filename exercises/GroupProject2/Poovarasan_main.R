@@ -135,7 +135,7 @@
       
     # 2b. Remove unnecessary columns
       loan <- loan[, !colnames(loan) %in% c('url', 'desc', 'title', 'zip_code', 'id', 'member_id', 'tax_liens', 'collections_12_mths_ex_med',
-                                            'chargeoff_within_12_mths')]
+                                            'chargeoff_within_12_mths', 'pub_rec_bankruptcies')]
       
     # 2c. Format percentage column into double
       loan$int_rate <- as.double(gsub(loan$int_rate, pattern = '\\s+|%', replacement = ''), length = 2)
@@ -185,25 +185,29 @@
       loan$loan_status <- as.factor(loan$loan_status)
       loan$addr_state <- as.factor(loan$addr_state)
       loan$inq_last_6mths <- as.factor(loan$inq_last_6mths)
-      loan$mths_since_last_delinq <- as.factor(loan$mths_since_last_delinq)
       
     # 2i. Fill NA values
       loan$revol_util[is.na(loan$revol_util)] <- 0 # revol_util has 50 out of 39717 records, so assign 0
+      #loan$open_acc[is.na(loan$open_acc)] <- 0 # open_acc has NA only for 71 records, so assign 0
+      
+    # 2j. Remove columns which are low weightage for the analysis
+      loan <- loan[, !colnames(loan) %in% c('mths_since_last_delinq', 'out_prncp_inv', 'funded_amnt_inv', 'total_pymnt_inv',
+                                            'mths_since_last_record', 'pub_rec', 'total_acc', 'out_prncp', 'total_rec_late_fee',
+                                            'recoveries', 'collection_recovery_fee')]
     
     # KEEP IT AS THE LAST STEP OF DATA CLEANING, SO WE DON'T NEED TO ABBREAVTE/CORRECT UNNECESSARY COLUMNS.    
-    # 2j. Fix rows - spelling correction & abbrevate
-      colnames(loan) <- c("loan_amount", "funded_amount", "funded_amount_by_investor", "payment_term_months", "interest_rate",
+    # 2k. Fix rows - spelling correction & abbrevate
+      colnames(loan) <- c("loan_amount", "funded_amount", "payment_term_months", "interest_rate",
                           "installment_amount", "grade", "sub_grade", "emp_job_title",
-                          "employment_length", "home_ownership", "annual_income", "verification_status", "issue_date", 
-                          "loan_status", "purpose",
-                          "address_state", "debt_to_incom_ratio", "delinq_2years", "earliest_credit_line",
-                          "inqquires_in_last_6months", "months_since_last_delinq",
-                          "months_since_last_record", "open_accounts", "pub_records", "revolving_balance", "revolving_utilization_rate",
-                          "total_accounts", "outstanding_principal",
-                          "outstanding_principal_investor", "total_payment", "total_pyment_investor", "total_received_principal",
-                          "total_received_interest", "total_received_late_fee",
-                          "recoveries", "collection_recovery_fee", "last_payment_date", "last_payment_amount", "next_payment_date",
-                          "last_credit_pull_date", "public_record_bankruptcies")
+                          "employment_length", "home_ownership", "annual_income", "verification_status",
+                          "issue_date", "loan_status", "purpose", "address_state",
+                          "debt_to_incom_ratio", "delinq_2years", "earliest_credit_line", "inqquires_in_last_6months",
+                          "open_accounts", "revolving_balance", "revolving_utilization_rate", "total_payment",
+                          "total_received_principal", "total_received_interest", "last_payment_date", "last_payment_amount",
+                          "next_payment_date", "last_credit_pull_date")
+      
+    # 2l. Filter data for analysis
+      # TODO:::::::::::::::::::
       
 #### 3a. Data analysis - define flow of analysis ####
     # I.univariate analysis
@@ -213,30 +217,104 @@
     # All above should be done with the 2 considerations of two risks (1. losing business, 2. losing finance)
       
 #### 3b. Univariate analysis ####
-      drawCategoricalUnivariatePlot <- function (variable, x_label, y_label = 'Freqency(%)', fill_color = 'orange')
+      drawCategoricalUnivariatePlot <- function (variable, x_label, y_label = 'Freqency(%)', fill_color = 'orange', suppress_warnings=F)
       {
-        plot <- ggplot(loan, aes(variable)) +
+        options(warn=0)
+        if(suppress_warnings == T) {
+          options(warn=-1)
+        }
+        plot <- loan %>%
+          ggplot(aes(variable)) +
           scale_y_continuous(labels = scales::percent) +
           ylab(y_label) +
           xlab(x_label) +
           theme(axis.text.x = element_text(angle = 10))
+        ## todo: display pecentage labels
         
         plot + geom_bar(aes(y = (..count../sum(..count..))), width = 0.7, fill = fill_color)
       }
     # I. categorical variable analysis
-      drawCategoricalUnivariatePlot(loan$payment_term_months, 'Payment term( months)')
-      drawCategoricalUnivariatePlot(loan$grade, 'LC assigned grade', 'Percentage', 'green')
-      drawCategoricalUnivariatePlot(loan$sub_grade, 'LC assigned sub grade', 'Percentage', 'blue')
-      # drawCategoricalUnivariatePlot(loan$emp_job_title, 'Job title', 'Percentage')
-      drawCategoricalUnivariatePlot(loan$employment_length, 'Employment length(years)', 'Percentage', 'purple')
-      drawCategoricalUnivariatePlot(loan$home_ownership, 'Home ownership', 'Percentage', 'magenta')
-      drawCategoricalUnivariatePlot(loan$verification_status, 'Verification status', 'Percentage', 'red')
-      drawCategoricalUnivariatePlot(loan$loan_status, 'Loan status', 'Percentage', 'yellow')
-      drawCategoricalUnivariatePlot(loan$purpose, 'Loan purpose', 'Percentage', 'maroon')
-      drawCategoricalUnivariatePlot(loan$address_state, 'Borrower state', 'Percentage', 'skyblue')
-      
-      ## TODO: Create function to get the actual counts
-      
-      ## TODO: employment length - NA - decide value based on the other details???
+      # -- borrower input variable analysis (info. received from borrower on the application time)
+      drawCategoricalUnivariatePlot(loan$grade, 'LC assigned grade', 'Percentage', 'dodgerblue3') # ordered categorical var
+      drawCategoricalUnivariatePlot(loan$sub_grade, 'LC assigned sub grade', 'Percentage', 'dodgerblue2') # ordered categorical var
+      drawCategoricalUnivariatePlot(loan$employment_length, 'Employment length(years)', 'Percentage', 'dodgerblue1', T) # ordered categorical var
+      drawCategoricalUnivariatePlot(loan$purpose, 'Purpose', 'Percentage','deepskyblue4')  # ordered categorical var
+      drawCategoricalUnivariatePlot(loan$open_accounts, 'No. of open accounts', 'Percentage','deeppink3') # ordered categorical var
+      drawCategoricalUnivariatePlot(loan$payment_term_months, 'Payment term( months)', 'dodgeblue4') # ordered categorical var
+      drawCategoricalUnivariatePlot(loan$home_ownership, 'Home ownership', 'Percentage', 'chartreuse1') # unordered categorical variables
+      drawCategoricalUnivariatePlot(loan$purpose, 'Loan purpose', 'Percentage', 'cadetblue3') # unordered categorical variables
+      drawCategoricalUnivariatePlot(loan$address_state, 'Borrower state', 'Percentage', 'cadetblue2') # unordered categorical variables
 
+      # -- Information found by the lendingclub.com
+      drawCategoricalUnivariatePlot(loan$delinq_2years, 'Delinq in 2 years', 'Percentage','deepskyblue3') # ordered categorical var
+      drawCategoricalUnivariatePlot(loan$verification_status, 'Verification status', 'Percentage', 'chartreuse') # unordered categorical variables
+      drawCategoricalUnivariatePlot(loan$loan_status, 'Loan status', 'Percentage', 'cadetblue4') # unordered categorical variables
+      drawCategoricalUnivariatePlot(loan$inqquires_in_last_6months, 'Inquires in last 6m', 'Percentage','deepskyblue1') # ordered categorical var
+      
+      # Finding from categorical univariate analysis
+      # 1. 67% of loan having 3 years & 23% having 6 years of tenure. (3 years are preferable)
+      # 2. B, A, C graded employess avail more no. the loan & G, F have less numbers
+      # 3. A2 - C3 & D2 sub graded employees availed more loans, A1, C4, C5, D2 & D3 availed the next stage
+      #   from D4, no. of loan taken by employees gradually decreases.
+      # 4. Employees experienced between 2-6 years are availed more loans. 10+ is shown extremely higher count since its aggregated expericence
+      #     of 10 years & above 10 years.
+      # 5. Dept consolidation is the extreme reason(47% of crew) for availing the loan, and credit card(10%) also can be summed up with the
+      #     dept consolidation. So, totally 57% of borrower availed the loan to clear their bank depts. (it's risky)
+      # 6. 82% of borrower has 0 delinquency in 2 years & less than 12% of the borrower having between 1 & 4 occurance. which means
+      #     providing loans to them is highly risky.
+      # 7. 48% of the borrower never inquired for the loan within 6 months, 28% of borrower inquired 1 time within 6 months
+      #     finding out the reason can be used to analysing the risk factors
+      # 8. 7.5% of borrowers holds the accounts between 5-13.
+      # 9. 85% of borrowers shown no. public records (so removed from the data frame)
+      # 10. 48 - 44% of borrowers are having rented house, 8% of borrowers having own house
+      # 11. 45% of borrowers income are not verified( risk factor? need more analysis)
+      #      32% are verified & 25% of borrower's income source is not verified.
+      # 12. 82% borrowers fully paid their loan, 14% are charged off & least no. of borrowers(1%) are currently paying their loan
+      #     hence 1% of current borrower can be filtered out for the risk analysis
+      # 13. CA & NY are having more no. of borrowers, IA, ID, TN, IN & ME are few other states has least no. of borrowers
+      
+      
+    # II. continuous variable analysis
+      # -- borrower input variable analysis (info. received from borrower on the application time)
+      loan %>% ggplot(aes(loan_amount)) + geom_histogram(bins=100)
+      boxplot(loan$annual_income)
+      
+      # -- Information found/assigned by the lendingclub.com
+      loan %>% ggplot(aes(funded_amount)) +  geom_histogram(bins=100)
+      loan %>% ggplot(aes(interest_rate)) +  geom_histogram(bins=100)
+      loan %>% ggplot(aes(installment_amount)) + geom_point(stat = 'count')
+      loan %>% ggplot(aes(debt_to_incom_ratio)) + geom_histogram(bins=200)  + geom_point(stat = 'count')
+      loan %>% ggplot(aes(revolving_balance)) +  geom_histogram(bins=200)
+      ggplot(loan, aes(revolving_utilization_rate)) +  geom_histogram(bins=200)
+      loan %>% ggplot(aes(total_payment)) + geom_histogram(binwidth=500)
+      loan %>% ggplot(aes(total_received_principal))  + geom_point(stat = 'count') +  geom_histogram(bins=200)
+      loan %>% ggplot(aes(total_received_interest))  + geom_point(stat = 'count') +  geom_histogram(bins=200)
+      loan %>% ggplot(aes(last_payment_amount))  + geom_histogram(bins=100)
+      
+      # Findings from quantitative/continuous variable analysis
+        # 1. no. of borrowers took loan taken in 5000x( 5000, 10000, 15000, 20000) are more compared to other amounts
+        #     10000 is having the highest frequency(2800 numbers)
+        # 2. same frequency for the funded amount
+        # 3. more loans were offered in the interest rate between 9 - 18%, however there are unusual highest interest rates
+        # 4. there are some outliers in annual income
+        # 5. dti ranging from 0 - 30, more borrowers lies between 5 - 25
+        # 6. revolving balance decreases gradually from 0 - 50000 & after that it's almost 0
+        # 7. revolving utilization rate is 0 for 9700 borrowers
+        # 8. total payment, received principal, last payment amount follows same level of distribution (gradually decreases)
+      
+#### 3c. I. Bivariate analysis ####
+    # 1. Grade vs delinq_2years
+      loan %>% ggplot()
+    # 2. Grade vs verification_status
+    # 3. Grade vs loan_status
+    # 4. Grade vs inqquires_in_last_6months
+    # 5. Grade vs funded_amount
+    # 6. Grade vs interest_rate
+    # 7. Grade vs debt_to_incom_ratio
+    # 8. Grade vs revolving_balance
+    # 9. Grade vs total_payment
+      
+#### 3c. II. Multivariate analysis ####
+      
+#### 3d. Derive variables ####
       
