@@ -67,6 +67,18 @@
     # b. Derive new variables (Split columns into multiple columns for more insights)
     cars <- separate(cars, col = carname, into = c('company', 'carname'), sep = ' ', extra="merge", fill="right")
     cars <- cars[, -3] # let's ignore carname since it's not independant varialbe as defined at the requirement
+    cars$company <- tolower(gsub(cars$company, pattern = '-', replacement = ' '))
+    cars$company <- factor(cars$company)
+    
+    misspelled <- c('alfa romero', 'maxda', 'porcshce', 'toyouta', 'vokswagen', 'vw')
+    replacement <- c('alfa romeo', 'mazda', 'porsche',  'toyota', 'volkswagen', 'volkswagen')
+    i <- 1
+    while(i <= length(misspelled)) {
+      levels(cars$company)[levels(cars$company)==misspelled[i]] <- replacement[i]
+      i <- i+1
+    }
+    
+    sapply(cars, levels)
   
 
 # -------------------------------
