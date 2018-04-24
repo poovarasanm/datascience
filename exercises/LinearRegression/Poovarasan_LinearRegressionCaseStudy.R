@@ -109,34 +109,55 @@
     
 #### VI. EDA ####
     # Univariate analysis
-    # Categorical variables
-    # the summary of each graph is commented at right side
-    cars %>% ggplot(aes(symboling)) + geom_bar() # Moderate to risky cars are more than the pretty safe cars
-    cars %>% ggplot(aes(company)) + geom_bar()   # Toyato, mazda, honda & nissan are top 4 companies
-    cars %>% ggplot(aes(fueltype)) + geom_bar()  # gas is the preferred type of fueltype(175+ cars) than diesel typed cars
-    cars %>% ggplot(aes(aspiration)) + geom_bar() # standard aspiration is preferred more( 175+) than turbo
-    cars %>% ggplot(aes(doornumber)) + geom_bar() # 150+ cars having 4 doors, 90 cars having 2 doors
-    cars %>% ggplot(aes(carbody)) + geom_bar()    # sedan & hatchpack are the highest type of cars, remaining are at least count
-    cars %>% ggplot(aes(drivewheel)) + geom_bar() # front - 100+, rear drive - 75 but 4 wheel drives are at least manufactured
-    cars %>% ggplot(aes(enginetype)) + geom_bar() # OHC engine type is comparitively very high than any other engines
-    cars %>% ggplot(aes(cylindernumber)) + geom_bar() # 4 cylinder typed cars are comparitively very high than any other types
-    cars %>% ggplot(aes(fuelsystem)) + geom_bar() # MPFI & 2BBL typed fuel systems are more than any other types
+      # Categorical variables
+      # the summary of each graph is commented at right side
+      cars %>% ggplot(aes(symboling)) + geom_bar() # Moderate to risky cars are more than the pretty safe cars
+      cars %>% ggplot(aes(company)) + geom_bar()   # Toyato, mazda, honda & nissan are top 4 companies
+      cars %>% ggplot(aes(fueltype)) + geom_bar()  # gas is the preferred type of fueltype(175+ cars) than diesel typed cars
+      cars %>% ggplot(aes(aspiration)) + geom_bar() # standard aspiration is preferred more( 175+) than turbo
+      cars %>% ggplot(aes(doornumber)) + geom_bar() # 150+ cars having 4 doors, 90 cars having 2 doors
+      cars %>% ggplot(aes(carbody)) + geom_bar()    # sedan & hatchpack are the highest type of cars, remaining are at least count
+      cars %>% ggplot(aes(drivewheel)) + geom_bar() # front - 100+, rear drive - 75 but 4 wheel drives are at least manufactured
+      cars %>% ggplot(aes(enginetype)) + geom_bar() # OHC engine type is comparitively very high than any other engines
+      cars %>% ggplot(aes(cylindernumber)) + geom_bar() # 4 cylinder typed cars are comparitively very high than any other types
+      cars %>% ggplot(aes(fuelsystem)) + geom_bar() # MPFI & 2BBL typed fuel systems are more than any other types
+      
+      # Continuous variables
+      cars %>% ggplot(aes(wheelbase)) + geom_histogram(binwidth = 1)
+      cars %>% ggplot(aes(carlength)) + geom_histogram(binwidth = 20)
+      cars %>% ggplot(aes(carwidth)) + geom_histogram(binwidth = 1)
+      cars %>% ggplot(aes(carheight)) + geom_histogram(binwidth = 1)
+      cars %>% ggplot(aes(curbweight)) + geom_histogram(binwidth = 500)
+      cars %>% ggplot(aes(enginesize)) + geom_histogram(binwidth = 30)
+      cars %>% ggplot(aes(boreratio)) + geom_histogram(binwidth = 0.25)
+      cars %>% ggplot(aes(stroke)) + geom_histogram(binwidth = 0.5)
+      cars %>% ggplot(aes(compressionratio)) + geom_histogram(binwidth = 15)
+      cars %>% ggplot(aes(horsepower)) + geom_histogram(binwidth = 20)
+      cars %>% ggplot(aes(peakrpm)) + geom_histogram(binwidth = 1000)
+      cars %>% ggplot(aes(citympg)) + geom_histogram(binwidth = 5)
+      cars %>% ggplot(aes(highwaympg)) + geom_histogram(binwidth = 5)
+      cars %>% ggplot(aes(price)) + geom_histogram(binwidth = 10000)
     
-    # Continuous variables
-    cars %>% ggplot(aes(wheelbase)) + geom_bar()
-    cars %>% ggplot(aes(carlength)) + geom_bar()
-    cars %>% ggplot(aes(carwidth)) + geom_bar()
-    cars %>% ggplot(aes(carheight)) + geom_bar()
-    cars %>% ggplot(aes(curbweight)) + geom_bar()
-    cars %>% ggplot(aes(wheelbase)) + geom_bar()
-    cars %>% ggplot(aes(wheelbase)) + geom_bar()
-    cars %>% ggplot(aes(wheelbase)) + geom_bar()
-    cars %>% ggplot(aes(wheelbase)) + geom_bar()
-    cars %>% ggplot(aes(wheelbase)) + geom_bar()
-    cars %>% ggplot(aes(wheelbase)) + geom_bar()
-    cars %>% ggplot(aes(wheelbase)) + geom_bar()
-    cars %>% ggplot(aes(wheelbase)) + geom_bar()
-    cars %>% ggplot(aes(wheelbase)) + geom_bar()
+  # Multivariate analysis
+      # Since we want to understand the price variations per other parameters, let's analyse other variable impacts on the prices
+      # vs categorical variables
+      cars %>% ggplot(aes(x=symboling, y=price)) + geom_col()
+      cars %>% ggplot(aes(x=fueltype, y=price)) + geom_col()
+      cars %>% ggplot(aes(x=company, y=price)) + geom_col()
+      cars %>% ggplot(aes(x=fueltype, y=price)) + geom_col()
+      cars %>% ggplot(aes(x=aspiration, y=price)) + geom_col()
+      cars %>% ggplot(aes(x=doornumber, y=price)) + geom_col()
+      cars %>% ggplot(aes(x=carbody, y=price)) + geom_col()
+      cars %>% ggplot(aes(x=drivewheel, y=price)) + geom_col()
+      cars %>% ggplot(aes(x=enginetype, y=price)) + geom_col()
+      cars %>% ggplot(aes(x=cylindernumber, y=price)) + geom_col()
+      cars %>% ggplot(aes(x=fuelsystem, y=price)) + geom_col()
+      
+      # vs continuous variables
+      cars %>% ggplot(aes(x=stroke, y=price)) + geom_point()
+      cars %>% ggplot(aes(x=peakrpm, y=price)) + geom_point()
+      
+  # Segmented analysis
 
 #### VII. Modal building ####
     # Convert factor columns to numeric/integers for modal building
