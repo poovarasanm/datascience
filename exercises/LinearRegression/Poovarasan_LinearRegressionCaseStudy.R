@@ -39,6 +39,7 @@
   install.packages('tidyr')
   install.packages('MASS')
   install.packages('car')
+  install.packages('treemap')
 
 # load dependencies
   library('dplyr')
@@ -46,6 +47,7 @@
   library('ggplot2')
   library('MASS')
   library('car')
+  library('treemap')
 
 # load data from csv
   cars <- read.csv('CarPrice_Assignment.csv')
@@ -122,7 +124,7 @@
       cars %>% ggplot(aes(cylindernumber)) + geom_bar() # 4 cylinder typed cars are comparitively very high than any other types
       cars %>% ggplot(aes(fuelsystem)) + geom_bar() # MPFI & 2BBL typed fuel systems are more than any other types
       
-      # Continuous variables
+    # Continuous variables
       cars %>% ggplot(aes(wheelbase)) + geom_histogram(binwidth = 1)
       cars %>% ggplot(aes(carlength)) + geom_histogram(binwidth = 20)
       cars %>% ggplot(aes(carwidth)) + geom_histogram(binwidth = 1)
@@ -138,13 +140,12 @@
       cars %>% ggplot(aes(highwaympg)) + geom_histogram(binwidth = 5)
       cars %>% ggplot(aes(price)) + geom_histogram(binwidth = 10000)
     
-  # Multivariate analysis
+    # Bivariate analysis
       # Since we want to understand the price variations per other parameters, let's analyse other variable impacts on the prices
       # vs categorical variables
       cars %>% ggplot(aes(x=symboling, y=price)) + geom_col()
       cars %>% ggplot(aes(x=fueltype, y=price)) + geom_col()
       cars %>% ggplot(aes(x=company, y=price)) + geom_col()
-      cars %>% ggplot(aes(x=fueltype, y=price)) + geom_col()
       cars %>% ggplot(aes(x=aspiration, y=price)) + geom_col()
       cars %>% ggplot(aes(x=doornumber, y=price)) + geom_col()
       cars %>% ggplot(aes(x=carbody, y=price)) + geom_col()
@@ -154,10 +155,41 @@
       cars %>% ggplot(aes(x=fuelsystem, y=price)) + geom_col()
       
       # vs continuous variables
-      cars %>% ggplot(aes(x=stroke, y=price)) + geom_point()
-      cars %>% ggplot(aes(x=peakrpm, y=price)) + geom_point()
+      cars %>% ggplot(aes(x=wheelbase, y=price)) + geom_point() + geom_smooth(se=F)
+      cars %>% ggplot(aes(x=carlength, y=price)) + geom_point() + geom_smooth(se=F)
+      cars %>% ggplot(aes(x=carwidth, y=price)) + geom_point() + geom_smooth(se=F)
+      cars %>% ggplot(aes(x=carheight, y=price)) + geom_point() + geom_smooth(se=F)
+      cars %>% ggplot(aes(x=curbweight, y=price)) + geom_point() + geom_smooth(se=F, method = "lm")
+      cars %>% ggplot(aes(x=enginesize, y=price)) + geom_point() + geom_smooth(se=F, method = "lm")
+      cars %>% ggplot(aes(x=boreratio, y=price)) + geom_point() + geom_smooth(se=F)
+      cars %>% ggplot(aes(x=compressionratio, y=price)) + geom_point() + geom_smooth(se=F)
+      cars %>% ggplot(aes(x=horsepower, y=price)) + geom_point() + geom_smooth(se=F, method = "lm")
+      cars %>% ggplot(aes(x=peakrpm, y=price)) + geom_point() + geom_smooth(se=F)
+      cars %>% ggplot(aes(x=citympg, y=price)) + geom_point() + geom_smooth(se=F)
+      cars %>% ggplot(aes(x=highwaympg, y=price)) + geom_point() + geom_smooth(se=F)
+      cars %>% ggplot(aes(x=citympg, y=price)) + geom_point() + geom_smooth(se=F)
+
+    # Multivariate analysis
+      cars %>% ggplot(aes(x=company, y=price, fill=symboling)) + geom_col()
+      cars %>% ggplot(aes(x=fueltype, y=price, fill=fuelsystem)) + geom_col()
+      cars %>% ggplot(aes(x=fueltype, y=price, fill=enginetype)) + geom_col()
+      cars %>% ggplot(aes(x=fuelsystem, y=price, fill=enginetype)) + geom_col()
       
-  # Segmented analysis
+      treemap(cars, 
+              index = c('carbody', 'fueltype'),
+              vSize = 'price',
+              vColor = 'carbody',
+              type = "index",
+              title = "Price by carbody, fueltype")
+      
+      treemap(cars, 
+              index = c('company', 'carbody'),
+              vSize = 'price',
+              vColor = 'fuelsystem',
+              type = "index",
+              title = "Price by carbody, fueltype")
+      
+    # Segmented analysis
 
 #### VII. Modal building ####
     # Convert factor columns to numeric/integers for modal building
