@@ -87,7 +87,8 @@
     levels(cars$enginelocation) # only two levels front & rear
     summary(cars$enginelocation) # 202 are front & only 3 are rear
     # only 1% of enginelocation is rear type, so we can remove this column
-    cars <- cars[, -8]
+    #cars <- cars[, -8]
+    # but it's still we can see if there is a price impact by the enginelocation
     
   # spell check & correction of car company column and replace '-' in the company name
     cars$company <- tolower(cars$company)
@@ -124,6 +125,7 @@
       cars <- cbind(cars, model.matrix( ~ drivewheel - 1, cars))
       cars <- cbind(cars, model.matrix( ~ enginetype - 1, cars))
       cars <- cbind(cars, model.matrix( ~ fuelsystem - 1, cars))
+      cars <- cbind(cars, model.matrix( ~ enginelocation - 1, cars))
     
   # verify the data are cleaned & ready for analysis
     str(cars)
@@ -143,6 +145,7 @@
       cars %>% ggplot(aes(enginetype)) + geom_bar() # OHC engine type is comparitively very high than any other engines
       cars %>% ggplot(aes(cylindernumber)) + geom_bar() # 4 cylinder typed cars are comparitively very high than any other types
       cars %>% ggplot(aes(fuelsystem)) + geom_bar() # MPFI & 2BBL typed fuel systems are more than any other types
+      cars %>% ggplot(aes(enginelocation)) + geom_bar() # almost all cars having front engines
       
     # Continuous variables
       cars %>% ggplot(aes(wheelbase)) + geom_histogram(binwidth = 1)
@@ -173,6 +176,7 @@
       cars %>% ggplot(aes(x=enginetype, y=price)) + geom_col()
       cars %>% ggplot(aes(x=cylindernumber, y=price)) + geom_col()
       cars %>% ggplot(aes(x=fuelsystem, y=price)) + geom_col()
+      cars %>% ggplot(aes(x=enginelocation, y=price)) + geom_col()
       
       # vs continuous variables
       cars %>% ggplot(aes(x=wheelbase, y=price)) + geom_point() + geom_smooth(se=F)
@@ -190,24 +194,473 @@
       cars %>% ggplot(aes(x=citympg, y=price)) + geom_point() + geom_smooth(se=F)
 
     # Multivariate & segmented analysis
-      cars %>% ggplot(aes(x=company, y=price, fill=symboling)) + geom_col()
-      cars %>% ggplot(aes(x=company, y=price, fill=fuelsystem)) + geom_col()
-      cars %>% ggplot(aes(x=company, y=price, fill=enginetype)) + geom_col()
-      cars %>% ggplot(aes(x=company, y=price, fill=enginetype)) + geom_col()
+      # Price distribution by fueltype, fuelsystem per company
+      cars %>% ggplot(aes(x=fueltype, y=price)) +
+        geom_col(aes(fill=fuelsystem), position = 'dodge') +
+        facet_wrap(~ company)
       
-      treemap(cars, 
-              index = c('carbody', 'fueltype'),
-              vSize = 'price',
-              vColor = 'carbody',
-              type = "index",
-              title = "Price by carbody, fueltype")
+      # Price distribution by aspiration, enginetype per company
+      cars %>% ggplot(aes(x=aspiration, y=price)) +
+        geom_col(aes(fill=enginetype), position = 'dodge') +
+        facet_wrap(~ company)
+        
+      # Price distribution by carbody, symboling(risky) per company
+      cars %>% ggplot(aes(x=carbody, y=price)) +
+        geom_col(aes(fill=symboling), position = 'dodge') +
+        facet_wrap(~ company)
       
-      treemap(cars, 
-              index = c('company', 'carbody'),
-              vSize = 'price',
-              vColor = 'fuelsystem',
-              type = "index",
-              title = "Price by carbody, fueltype")
+      # Price variation by citympg, highwaympg
+      cars %>% ggplot(aes(x=price, group = 1)) +
+        geom_line(aes(y=citympg), color='red') +
+        geom_line(aes(y=highwaympg), color='green')
+      
+      # Price variation by horsepower, enginesize
+      cars %>% ggplot(aes(x=price,y=horsepower)) +
+        geom_line(aes(y=horsepower), color='red') +
+        geom_line(aes(y=enginesize), color='green')
+      
+      cor_values <- cor(cars[, c("symboling", "wheelbase", "carlength", "carwidth", "carheight",  "curbweight",       
+                                 "cylindernumber", "enginesize", "boreratio", "stroke",           
+                                 "compressionratio", "horsepower", "peakrpm", "citympg", "highwaympg", "price")])
+      corrplot(cor_values, method="square")
+      heatmap(cor_values)
+      
+      # let's create a dataframe for the modal building - which excludes the base variable used for 
+      # the dummy variable creation
+      cars_for_model <- cars[, !(colnames(cars) %in% c('company', 'fueltype', 'aspiration', 'carbody', 'drivewheel', 'enginetype',
+                                 'fuelsystem', 'enginelocation'))]
 
 #### VII. Modal building ####
-    # Convert factor columns to numeric/integers for modal building
+    # Seed
+      set.seed(100)
+      
+    # Create trainning & test data
+      cars_subset <- sample(1:nrow(cars_for_model),0.7*nrow(cars_for_model))
+      car_samples <-cars_for_model[cars_subset, ]
+      cars_for_test <- cars[-cars_subset, ]
+    
+    #### Model - 1  ####
+      price_prediction_model_1 <- lm(price ~ ., data = car_samples)
+      summary(price_prediction_model_1)
+      
+      # let's use step aic in both direction
+      stepAIC(price_prediction_model_1, direction = 'both')
+    
+    #### Model - 2  ####
+      # let's use the result lm() of step aic
+      price_prediction_model_2 <- lm(formula = price ~ carlength + carwidth + curbweight + enginesize + 
+                                       stroke + compressionratio + peakrpm + citympg + companybmw + 
+                                       companybuick + companychevrolet + companydodge + companyjaguar + 
+                                       companymazda + companymitsubishi + companynissan + companypeugeot + 
+                                       companyplymouth + companyporsche + companyrenault + companysaab + 
+                                       companysubaru + companytoyota + companyvolkswagen + aspirationstd + 
+                                       carbodyconvertible + drivewheel4wd + drivewheelfwd + enginetypedohc + 
+                                       enginetypedohcv + enginetypeohc + enginetypeohcv + fuelsystem1bbl, 
+                                     data = car_samples)
+      
+      # let's see R-squared, adjusted R-squared etc
+      summary(price_prediction_model_2)
+      
+      # let's see the VIP
+      vif(price_prediction_model_2)
+    
+    #### Model - 3  ####
+      # let's remove curbweight as it is having high p values & vip
+      price_prediction_model_3 <- lm(formula = price ~ carlength + carwidth + enginesize + 
+                                       stroke + compressionratio + peakrpm + citympg + companybmw + 
+                                       companybuick + companychevrolet + companydodge + companyjaguar + 
+                                       companymazda + companymitsubishi + companynissan + companypeugeot + 
+                                       companyplymouth + companyporsche + companyrenault + companysaab + 
+                                       companysubaru + companytoyota + companyvolkswagen + aspirationstd + 
+                                       carbodyconvertible + drivewheel4wd + drivewheelfwd + enginetypedohc + 
+                                       enginetypedohcv + enginetypeohc + enginetypeohcv + fuelsystem1bbl, 
+                                     data = car_samples)
+      summary(price_prediction_model_3)
+      vif(price_prediction_model_3)
+      
+    #### Model - 4 ####
+      # let's remove compressionratio as it has high p value
+      price_prediction_model_4 <- lm(formula = price ~ carlength + carwidth + enginesize + 
+                                       stroke + peakrpm + citympg + companybmw + 
+                                       companybuick + companychevrolet + companydodge + companyjaguar + 
+                                       companymazda + companymitsubishi + companynissan + companypeugeot + 
+                                       companyplymouth + companyporsche + companyrenault + companysaab + 
+                                       companysubaru + companytoyota + companyvolkswagen + aspirationstd + 
+                                       carbodyconvertible + drivewheel4wd + drivewheelfwd + enginetypedohc + 
+                                       enginetypedohcv + enginetypeohc + enginetypeohcv + fuelsystem1bbl, 
+                                     data = car_samples)
+      summary(price_prediction_model_4)
+      vif(price_prediction_model_4)
+      
+    ### Model - 5 ####
+      # remove citympg as it has no star rating & also considerable high p value
+      price_prediction_model_5 <- lm(formula = price ~ carlength + carwidth + enginesize + 
+                                       stroke + peakrpm + companybmw + 
+                                       companybuick + companychevrolet + companydodge + companyjaguar + 
+                                       companymazda + companymitsubishi + companynissan + companypeugeot + 
+                                       companyplymouth + companyporsche + companyrenault + companysaab + 
+                                       companysubaru + companytoyota + companyvolkswagen + aspirationstd + 
+                                       carbodyconvertible + drivewheel4wd + drivewheelfwd + enginetypedohc + 
+                                       enginetypedohcv + enginetypeohc + enginetypeohcv + fuelsystem1bbl, 
+                                     data = car_samples)
+      summary(price_prediction_model_5)
+      vif(price_prediction_model_5)
+      
+    #### Model - 6 ####
+    # remove companysaab as it has . as the rating & considerable high p value
+    price_prediction_model_6 <- lm(formula = price ~ carlength + carwidth + enginesize + 
+                                     stroke + peakrpm + companybmw + 
+                                     companybuick + companychevrolet + companydodge + companyjaguar + 
+                                     companymazda + companymitsubishi + companynissan + companypeugeot + 
+                                     companyplymouth + companyporsche + companyrenault + 
+                                     companysubaru + companytoyota + companyvolkswagen + aspirationstd + 
+                                     carbodyconvertible + drivewheel4wd + drivewheelfwd + enginetypedohc + 
+                                     enginetypedohcv + enginetypeohc + enginetypeohcv + fuelsystem1bbl, 
+                                   data = car_samples)
+    summary(price_prediction_model_6)
+    vif(price_prediction_model_6)
+    
+    #### Model - 7 ####
+    # remove carlength as it has . as the rating & considerable high p value
+    price_prediction_model_7 <- lm(formula = price ~ carwidth + enginesize + 
+                                     stroke + peakrpm + companybmw + 
+                                     companybuick + companychevrolet + companydodge + companyjaguar + 
+                                     companymazda + companymitsubishi + companynissan + companypeugeot + 
+                                     companyplymouth + companyporsche + companyrenault + 
+                                     companysubaru + companytoyota + companyvolkswagen + aspirationstd + 
+                                     carbodyconvertible + drivewheel4wd + drivewheelfwd + enginetypedohc + 
+                                     enginetypedohcv + enginetypeohc + enginetypeohcv + fuelsystem1bbl, 
+                                   data = car_samples)
+    summary(price_prediction_model_7)
+    vif(price_prediction_model_7)
+    
+    #### Model - 8 ####
+    # remove peakrpm as it has only 1 rating
+    price_prediction_model_8 <- lm(formula = price ~ carwidth + enginesize + 
+                                     stroke + companybmw + 
+                                     companybuick + companychevrolet + companydodge + companyjaguar + 
+                                     companymazda + companymitsubishi + companynissan + companypeugeot + 
+                                     companyplymouth + companyporsche + companyrenault + 
+                                     companysubaru + companytoyota + companyvolkswagen + aspirationstd + 
+                                     carbodyconvertible + drivewheel4wd + drivewheelfwd + enginetypedohc + 
+                                     enginetypedohcv + enginetypeohc + enginetypeohcv + fuelsystem1bbl, 
+                                   data = car_samples)
+    summary(price_prediction_model_8)
+    vif(price_prediction_model_8)
+    
+    #### Model - 9 ####
+    # remove fuelsystem1bbl as it has only 1 rating
+    price_prediction_model_9 <- lm(formula = price ~ carwidth + enginesize + 
+                                     stroke + companybmw + 
+                                     companybuick + companychevrolet + companydodge + companyjaguar + 
+                                     companymazda + companymitsubishi + companynissan + companypeugeot + 
+                                     companyplymouth + companyporsche + companyrenault + 
+                                     companysubaru + companytoyota + companyvolkswagen + aspirationstd + 
+                                     carbodyconvertible + drivewheel4wd + drivewheelfwd + enginetypedohc + 
+                                     enginetypedohcv + enginetypeohc + enginetypeohcv, 
+                                   data = car_samples)
+    summary(price_prediction_model_9)
+    vif(price_prediction_model_9)
+    
+    #### Model - 10 ####
+    # remove drivewheelfwd as it has only 1 rating
+    price_prediction_model_10 <- lm(formula = price ~ carwidth + enginesize + 
+                                     stroke + companybmw + 
+                                     companybuick + companychevrolet + companydodge + companyjaguar + 
+                                     companymazda + companymitsubishi + companynissan + companypeugeot + 
+                                     companyplymouth + companyporsche + companyrenault + 
+                                     companysubaru + companytoyota + companyvolkswagen + aspirationstd + 
+                                     carbodyconvertible + drivewheel4wd + enginetypedohc + 
+                                     enginetypedohcv + enginetypeohc + enginetypeohcv, 
+                                   data = car_samples)
+    summary(price_prediction_model_10)
+    vif(price_prediction_model_10)
+    
+    #### Model - 11 ####
+    # remove companychevrolet as it has only 1 rating & high vif than other 1 rating vars
+    price_prediction_model_11 <- lm(formula = price ~ carwidth + enginesize + 
+                                      stroke + companybmw + 
+                                      companybuick + companydodge + companyjaguar + 
+                                      companymazda + companymitsubishi + companynissan + companypeugeot + 
+                                      companyplymouth + companyporsche + companyrenault + 
+                                      companysubaru + companytoyota + companyvolkswagen + aspirationstd + 
+                                      carbodyconvertible + drivewheel4wd + enginetypedohc + 
+                                      enginetypedohcv + enginetypeohc + enginetypeohcv, 
+                                    data = car_samples)
+    summary(price_prediction_model_11)
+    vif(price_prediction_model_11)
+    
+    #### Model - 12 ####
+    # remove companyvolkswagen as it has only 1 rating & high vif than other 1 rating vars
+    price_prediction_model_12 <- lm(formula = price ~ carwidth + enginesize + 
+                                      stroke + companybmw + 
+                                      companybuick + companydodge + companyjaguar + 
+                                      companymazda + companymitsubishi + companynissan + companypeugeot + 
+                                      companyplymouth + companyporsche + companyrenault + 
+                                      companysubaru + companytoyota + aspirationstd + 
+                                      carbodyconvertible + drivewheel4wd + enginetypedohc + 
+                                      enginetypedohcv + enginetypeohc + enginetypeohcv, 
+                                    data = car_samples)
+    summary(price_prediction_model_12)
+    vif(price_prediction_model_12)
+    
+    #### Model - 13 ####
+    # remove companyrenault as it has only 1 rating & high p value than other 1 rating vars
+    price_prediction_model_13 <- lm(formula = price ~ carwidth + enginesize + 
+                                      stroke + companybmw + 
+                                      companybuick + companydodge + companyjaguar + 
+                                      companymazda + companymitsubishi + companynissan + companypeugeot + 
+                                      companyplymouth + companyporsche + 
+                                      companysubaru + companytoyota + aspirationstd + 
+                                      carbodyconvertible + drivewheel4wd + enginetypedohc + 
+                                      enginetypedohcv + enginetypeohc + enginetypeohcv, 
+                                    data = car_samples)
+    summary(price_prediction_model_13)
+    vif(price_prediction_model_13)
+    
+    #### Model - 14 ####
+    # remove companydodge as it has only 1 rating & high p value than other 1 rating vars
+    price_prediction_model_14 <- lm(formula = price ~ carwidth + enginesize + 
+                                      stroke + companybmw + 
+                                      companybuick + companyjaguar + 
+                                      companymazda + companymitsubishi + companynissan + companypeugeot + 
+                                      companyplymouth + companyporsche + 
+                                      companysubaru + companytoyota + aspirationstd + 
+                                      carbodyconvertible + drivewheel4wd + enginetypedohc + 
+                                      enginetypedohcv + enginetypeohc + enginetypeohcv, 
+                                    data = car_samples)
+    summary(price_prediction_model_14)
+    vif(price_prediction_model_14)
+    
+    #### Model - 15 ####
+    # remove companynissan as it has only 1 rating & high p value than other 1 rating vars
+    price_prediction_model_15 <- lm(formula = price ~ carwidth + enginesize + 
+                                      stroke + companybmw + 
+                                      companybuick + companyjaguar + 
+                                      companymazda + companymitsubishi + companypeugeot + 
+                                      companyplymouth + companyporsche + 
+                                      companysubaru + companytoyota + aspirationstd + 
+                                      carbodyconvertible + drivewheel4wd + enginetypedohc + 
+                                      enginetypedohcv + enginetypeohc + enginetypeohcv, 
+                                    data = car_samples)
+    summary(price_prediction_model_15)
+    vif(price_prediction_model_15)
+    
+    #### Model - 16 ####
+    # remove companyplymouth as it has only 0 rating & high p value
+    price_prediction_model_16 <- lm(formula = price ~ carwidth + enginesize + 
+                                      stroke + companybmw + 
+                                      companybuick + companyjaguar + 
+                                      companymazda + companymitsubishi + companypeugeot + 
+                                      companyporsche + 
+                                      companysubaru + companytoyota + aspirationstd + 
+                                      carbodyconvertible + drivewheel4wd + enginetypedohc + 
+                                      enginetypedohcv + enginetypeohc + enginetypeohcv, 
+                                    data = car_samples)
+    summary(price_prediction_model_16)
+    vif(price_prediction_model_16)
+    
+    #### Model - 17 ####
+    # remove companymazda as it has only 2 rating & high p value than other 2 rating vars
+    price_prediction_model_17 <- lm(formula = price ~ carwidth + enginesize + 
+                                      stroke + companybmw + 
+                                      companybuick + companyjaguar + 
+                                      companymitsubishi + companypeugeot + 
+                                      companyporsche + 
+                                      companysubaru + companytoyota + aspirationstd + 
+                                      carbodyconvertible + drivewheel4wd + enginetypedohc + 
+                                      enginetypedohcv + enginetypeohc + enginetypeohcv, 
+                                    data = car_samples)
+    summary(price_prediction_model_17)
+    vif(price_prediction_model_17)
+    
+    #### Model - 18 ####
+    # remove enginetypedohc as it has only 2 rating & high p value than other 2 rating vars
+    price_prediction_model_18 <- lm(formula = price ~ carwidth + enginesize + 
+                                      stroke + companybmw + 
+                                      companybuick + companyjaguar + 
+                                      companymitsubishi + companypeugeot + 
+                                      companyporsche + 
+                                      companysubaru + companytoyota + aspirationstd + 
+                                      carbodyconvertible + drivewheel4wd +
+                                      enginetypedohcv + enginetypeohc + enginetypeohcv, 
+                                    data = car_samples)
+    summary(price_prediction_model_18)
+    vif(price_prediction_model_18)
+    
+    #### Model - 19 ####
+    # remove enginetypeohcv as it has no rating & high p value
+    price_prediction_model_19 <- lm(formula = price ~ carwidth + enginesize + 
+                                      stroke + companybmw + 
+                                      companybuick + companyjaguar + 
+                                      companymitsubishi + companypeugeot + 
+                                      companyporsche + 
+                                      companysubaru + companytoyota + aspirationstd + 
+                                      carbodyconvertible + drivewheel4wd +
+                                      enginetypedohcv + enginetypeohc, 
+                                    data = car_samples)
+    summary(price_prediction_model_19)
+    vif(price_prediction_model_19)
+    
+    #### Model - 20 ####
+    # remove carbodyconvertible as it has 1 rating
+    price_prediction_model_20 <- lm(formula = price ~ carwidth + enginesize + 
+                                      stroke + companybmw + 
+                                      companybuick + companyjaguar + 
+                                      companymitsubishi + companypeugeot + 
+                                      companyporsche + 
+                                      companysubaru + companytoyota + aspirationstd + 
+                                      drivewheel4wd +
+                                      enginetypedohcv + enginetypeohc, 
+                                    data = car_samples)
+    summary(price_prediction_model_20)
+    vif(price_prediction_model_20)
+    
+    #### Model - 21 ####
+    # remove companymitsubishi as it has 1 rating
+    price_prediction_model_21 <- lm(formula = price ~ carwidth + enginesize + 
+                                      stroke + companybmw + 
+                                      companybuick + companyjaguar + 
+                                      companypeugeot + 
+                                      companyporsche + 
+                                      companysubaru + companytoyota + aspirationstd + 
+                                      drivewheel4wd +
+                                      enginetypedohcv + enginetypeohc, 
+                                    data = car_samples)
+    summary(price_prediction_model_21)
+    vif(price_prediction_model_21)
+    
+    #### Model - 22 ####
+    # remove companytoyota as it has 2 rating & high p value than other 2 rating vars
+    price_prediction_model_22 <- lm(formula = price ~ carwidth + enginesize + 
+                                      stroke + companybmw + 
+                                      companybuick + companyjaguar + 
+                                      companypeugeot + 
+                                      companyporsche + 
+                                      companysubaru + aspirationstd + 
+                                      drivewheel4wd +
+                                      enginetypedohcv + enginetypeohc, 
+                                    data = car_samples)
+    summary(price_prediction_model_22)
+    vif(price_prediction_model_22)
+    
+    #### Model - 23 ####
+    # remove drivewheel4wd as it has only 2 rating
+    price_prediction_model_23 <- lm(formula = price ~ carwidth + enginesize + 
+                                      stroke + companybmw + 
+                                      companybuick + companyjaguar + 
+                                      companypeugeot + 
+                                      companyporsche + 
+                                      companysubaru + aspirationstd + 
+                                      enginetypedohcv + enginetypeohc, 
+                                    data = car_samples)
+    summary(price_prediction_model_23)
+    vif(price_prediction_model_23)
+    
+    #### Model - 24 ####
+    # remove carwidth as it has high p value & high vip value than other high p value vars
+    price_prediction_model_24 <- lm(formula = price ~ enginesize + 
+                                      stroke + companybmw + 
+                                      companybuick + companyjaguar + 
+                                      companypeugeot + 
+                                      companyporsche + 
+                                      companysubaru + aspirationstd + 
+                                      enginetypedohcv + enginetypeohc, 
+                                    data = car_samples)
+    summary(price_prediction_model_24)
+    vif(price_prediction_model_24)
+    
+    #### Model - 25 ####
+    # remove enginetypedohcv as it has no rating & high p and vif value than other no rating var
+    price_prediction_model_25 <- lm(formula = price ~ enginesize + 
+                                      stroke + companybmw + 
+                                      companybuick + companyjaguar + 
+                                      companypeugeot + 
+                                      companyporsche + 
+                                      companysubaru + aspirationstd + 
+                                      enginetypeohc, 
+                                    data = car_samples)
+    summary(price_prediction_model_25)
+    vif(price_prediction_model_25)
+    
+    #### Model - 26 ####
+    # remove companypeugeot as it has no rating & high p and vif value
+    price_prediction_model_26 <- lm(formula = price ~ enginesize + 
+                                      stroke + companybmw + 
+                                      companybuick + companyjaguar + 
+                                      companyporsche + 
+                                      companysubaru + aspirationstd + 
+                                      enginetypeohc, 
+                                    data = car_samples)
+    summary(price_prediction_model_26)
+    vif(price_prediction_model_26)
+    
+    #### Model - 27 ####
+    # remove enginetypeohc as it has 2 rating & all others having 3 rating
+    price_prediction_model_27 <- lm(formula = price ~ enginesize + 
+                                      stroke + companybmw + 
+                                      companybuick + companyjaguar + 
+                                      companyporsche + 
+                                      companysubaru + aspirationstd, 
+                                    data = car_samples)
+    summary(price_prediction_model_27)
+    vif(price_prediction_model_27)
+    
+    #### Model - 28 ####
+    # remove enginesize as it has high p value & vif value
+    price_prediction_model_28 <- lm(formula = price ~  stroke + companybmw + 
+                                      companybuick + companyjaguar + 
+                                      companyporsche + 
+                                      companysubaru + aspirationstd, 
+                                    data = car_samples)
+    summary(price_prediction_model_28)
+    vif(price_prediction_model_28)
+    
+    #### Model - 29 ####
+    # remove stroke as it has . rating & high p value and vif
+    price_prediction_model_29 <- lm(formula = price ~  companybmw + 
+                                      companybuick + companyjaguar + 
+                                      companyporsche + 
+                                      companysubaru + aspirationstd, 
+                                    data = car_samples)
+    summary(price_prediction_model_29)
+    vif(price_prediction_model_29)
+    
+    #### Model - 30 ####
+    # remove companysubaru as it has no rating & high p value
+    price_prediction_model_30 <- lm(formula = price ~  companybmw + 
+                                      companybuick + companyjaguar + 
+                                      companyporsche + 
+                                      aspirationstd, 
+                                    data = car_samples)
+    summary(price_prediction_model_30)
+    vif(price_prediction_model_30)
+    
+  #### Final model ####
+    # all vars has 3 rating & further regression leads < 50 adjusted R squared
+    # this has ~70% of adjusted r squared value
+    final_model <- lm(formula = price ~  companybmw + 
+                        companybuick + companyjaguar + 
+                        companyporsche + 
+                        aspirationstd, 
+                      data = car_samples)
+    summary(final_model)
+    vif(final_model)
+    
+  #### verify ####
+    prediction_result <- predict(final_model, cars_for_test)
+    View(prediction_result)
+    
+    # let's set the predicted price to the cars_for_test
+    cars_for_test$predicted_price <- prediction_result
+    
+    # correlation
+    cars_price_r <- cor(cars_for_test$price, cars_for_test$predicted_price)
+    # 0.7214849 which is good value
+    
+    # what is r squared value
+    r_squared <- cars_price_r ^ 2
+    # 0.5205404
+    
+    par(mfrow = c(2, 2))
+    plot(final_model)
