@@ -639,6 +639,9 @@
   #### Final model ####
     # all vars has 3 rating & further regression leads < 50 adjusted R squared
     # this has ~70% of adjusted r squared value
+    # Residual standard error: 4341 on 137 degrees of freedom
+    # Multiple R-squared:  0.7277,	Adjusted R-squared:  0.7177 
+    # F-statistic: 73.22 on 5 and 137 DF,  p-value: < 2.2e-16
     final_model <- lm(formula = price ~  companybmw + 
                         companybuick + companyjaguar + 
                         companyporsche + 
