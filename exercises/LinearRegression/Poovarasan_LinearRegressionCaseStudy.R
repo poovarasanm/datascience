@@ -40,6 +40,7 @@
   install.packages('MASS')
   install.packages('car')
   install.packages('treemap')
+  install.packages('corrplot')
 
 # load dependencies
   library('dplyr')
@@ -48,6 +49,7 @@
   library('MASS')
   library('car')
   library('treemap')
+  library('corrplot')
 
 # load data from csv
   cars <- read.csv('CarPrice_Assignment.csv')
@@ -65,10 +67,10 @@
   length(unique(cars$car_Id)) == length(cars$car_ID) # False - No duplicates
 
 # Has duplicate cols?
-  length(colnames(cars)) == length(unique(colnames(cars))) # False - no duplicates
+  length(colnames(cars)) == length(unique(colnames(cars))) # True - no duplicates
 
 # Has NA values? No
-  View(colSums(is.na(cars)))
+  colSums(is.na(cars))
 
 #### V. Data preparation ####
   # fix headers - make the headers uniform
@@ -98,12 +100,30 @@
       i <- i+1
     }
   
-  # check the levels of columns
+  # check the levels of columns (manually check the levels)
     sapply(cars, levels) # to verify if all categorical columns has valid & no duplicate or incorrect values
     
-  # Cross check the data type of each column with the data definition
-  # let's convert symboling column from integer to categorical
-    cars$symboling <- factor(cars$symboling)
+  # Convert symboling symboling integer
+    cars$symboling <- as.integer(cars$symboling)
+    
+  # Convert cylindernumbers into integer
+    levels(cars$cylindernumber) <- c(8, 5, 4, 6, 3, 12, 2)
+    # convert cylinders to integer
+      cars$cylindernumber <- as.integer(cars$cylindernumber)
+      
+  # Convert doornumber into integer
+      levels(cars$doornumber) <- c(4, 2)
+      # convert doors to integer
+        cars$doornumber <- as.integer(cars$doornumber)
+        
+  # Dummy variable creation
+      cars <- cbind(cars, model.matrix( ~ company - 1, cars))
+      cars <- cbind(cars, model.matrix( ~ fueltype - 1, cars))
+      cars <- cbind(cars, model.matrix( ~ aspiration - 1, cars))
+      cars <- cbind(cars, model.matrix( ~ carbody - 1, cars))
+      cars <- cbind(cars, model.matrix( ~ drivewheel - 1, cars))
+      cars <- cbind(cars, model.matrix( ~ enginetype - 1, cars))
+      cars <- cbind(cars, model.matrix( ~ fuelsystem - 1, cars))
     
   # verify the data are cleaned & ready for analysis
     str(cars)
@@ -169,11 +189,11 @@
       cars %>% ggplot(aes(x=highwaympg, y=price)) + geom_point() + geom_smooth(se=F)
       cars %>% ggplot(aes(x=citympg, y=price)) + geom_point() + geom_smooth(se=F)
 
-    # Multivariate analysis
+    # Multivariate & segmented analysis
       cars %>% ggplot(aes(x=company, y=price, fill=symboling)) + geom_col()
-      cars %>% ggplot(aes(x=fueltype, y=price, fill=fuelsystem)) + geom_col()
-      cars %>% ggplot(aes(x=fueltype, y=price, fill=enginetype)) + geom_col()
-      cars %>% ggplot(aes(x=fuelsystem, y=price, fill=enginetype)) + geom_col()
+      cars %>% ggplot(aes(x=company, y=price, fill=fuelsystem)) + geom_col()
+      cars %>% ggplot(aes(x=company, y=price, fill=enginetype)) + geom_col()
+      cars %>% ggplot(aes(x=company, y=price, fill=enginetype)) + geom_col()
       
       treemap(cars, 
               index = c('carbody', 'fueltype'),
@@ -188,8 +208,6 @@
               vColor = 'fuelsystem',
               type = "index",
               title = "Price by carbody, fueltype")
-      
-    # Segmented analysis
 
 #### VII. Modal building ####
     # Convert factor columns to numeric/integers for modal building
