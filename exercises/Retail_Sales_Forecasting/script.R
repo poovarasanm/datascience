@@ -59,7 +59,7 @@
     sales <- sales[, -1]
 # II. Convert the data type to valid data types
     cols <- c("Ship.Mode", "Segment",  "City", "State", "Country", "Market",        
-              "Region",         "Category",       "Sub.Category",   "Sales", "Order.Priority")
+              "Region",         "Category",       "Sub.Category",   "Order.Priority")
     # convert the char class to factors
     sales[cols] <- lapply(sales[cols], tolower)
     # first lowercase all below columns
@@ -94,18 +94,18 @@
 
 # b. Data distribution plots
 # categorical variables - univariate analysis
-    sales %>% ggplot(aes(sales$Order.Date)) + geom_bar()
-    sales %>% ggplot(aes(sales$Order.Day)) + geom_bar()
-    sales %>% ggplot(aes(sales$Order.Month)) + geom_bar(binwidth = 1)
-    sales %>% ggplot(aes(sales$Order.Year)) + geom_bar()
-    sales %>% ggplot(aes(sales$Ship.Date)) + geom_bar()
-    sales %>% ggplot(aes(sales$Ship.Mode)) + geom_bar()
-    sales %>% ggplot(aes(sales$Segment)) + geom_bar()
-    sales %>% ggplot(aes(sales$Market)) + geom_bar()
-    sales %>% ggplot(aes(sales$Region)) + geom_bar()
-    sales %>% ggplot(aes(sales$Category)) + geom_bar()
-    sales %>% ggplot(aes(sales$Sub.Category)) + geom_bar()
-    sales %>% ggplot(aes(sales$Order.Priority)) + geom_bar()
+    sales %>% ggplot(aes(sales$Order.Date)) + geom_bar() # No. of transactions per Date
+    sales %>% ggplot(aes(sales$Order.Day)) + geom_bar() # No. of transactions per Day
+    sales %>% ggplot(aes(sales$Order.Month)) + geom_bar() # No. of transactions per Month
+    sales %>% ggplot(aes(sales$Order.Year)) + geom_bar() # No. of trans. per year
+    sales %>% ggplot(aes(sales$Ship.Date)) + geom_bar() # No. of shipping per date
+    sales %>% ggplot(aes(sales$Ship.Mode)) + geom_bar() # Shipping mode counts
+    sales %>% ggplot(aes(sales$Segment)) + geom_bar() # No. of trans per segment
+    sales %>% ggplot(aes(sales$Market)) + geom_bar() # No. of trans per market
+    sales %>% ggplot(aes(sales$Region)) + geom_bar() # No. of trans per region
+    sales %>% ggplot(aes(sales$Category)) + geom_bar() # No. of trans per category
+    sales %>% ggplot(aes(sales$Sub.Category)) + geom_bar() # No. of trans per sub category
+    sales %>% ggplot(aes(sales$Order.Priority)) + geom_bar() # No. of trans per priority
 
 # c. Continuous variables
     sales %>% ggplot(aes(sales$Quantity)) + geom_histogram(stat="count")
@@ -114,48 +114,101 @@
     # Sales, Quantity & Profit are taking long time to draw the plots, so skipping it for now
 
 #### 4: Bivariate analysis ####
-
-sales %>%
-  filter(Status != 'Trip Completed') %>%
-  ggplot(aes(Pickup.point, fill=Status)) + geom_bar() +
-  geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust=0.5))
-
-# Identify the most problematic the time slots
-sales %>%
-  filter(Status != 'Trip Completed') %>%
-  ggplot(aes(Request.time_slot, fill=Status)) + geom_bar() +
-  geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust=0.5))
-
-
-# 2. find out gap between supply and demand & show them using plots
-# Find the time slots when the highest gap exists
-sales %>%
-  ggplot(aes(Request.time_slot, fill=Status)) + geom_bar() +
-  geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust=0.5))
-
-# Find the types of requests (city-airport or airport-city) for which the gap is the most severe in the identified time slots
-problematic_time_slots <- c('Late night', 'Early morning', 'Morning', 'Evening', 'Late evening', 'Early night')
-sales %>%
-  filter(Request.time_slot %in%  problematic_time_slots) %>%
-  ggplot(aes(x=Pickup.point, fill=Status)) +   
-  geom_bar(position='stack', stat='count') +
-  geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust=0.5)) +
-  facet_wrap(~Request.time_slot)
-
-ggplot(sales, aes(x=Request.day, fill=Status)) +   
-  geom_bar(position='stack', stat='count') +
-  geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust=0.5)) +
-  facet_wrap(~Pickup.point)
-
-
-# Find the frequency of cancellation of drivers
-sales %>%
-  filter(Driver.id <= 100) %>%
-  ggplot(aes(Driver.id, fill=Status)) +
-  ylab("Cancelled requests") +
-  xlab("Driver id") +
-  geom_bar(stat='count') +
-  geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust=0.5))
-
+    #### 4.1. Market with various attributes ####
+    # a. Market vs Order.Day
+      sales %>%
+        ggplot(aes(Order.Day, fill=Market)) + geom_bar() +
+        geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust=1))
+    # b. Market vs Order.Month
+      sales %>%
+        ggplot(aes(Order.Month, fill=Market)) + geom_bar() +
+        geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust=1))
+    # c. Market vs Order.Year
+      sales %>%
+        ggplot(aes(Order.Year, fill=Market)) + geom_bar() +
+        geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust=0.5))
+    # d. Market vs shipping mode
+      sales %>%
+        ggplot(aes(Market, fill=Ship.Mode)) + geom_bar() +
+        geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust=0.5))
+    # e. Market vs Segment
+      sales %>%
+        ggplot(aes(Market, fill=Segment)) + geom_bar() +
+        geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust=0.5))
+    # f. Market vs Category
+      sales %>%
+        ggplot(aes(Market, fill=Category)) + geom_bar() +
+        geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust=0.5))
+    # g. Market vs Sub. Category
+      sales %>%
+        ggplot(aes(Market, fill=Sub.Category)) + geom_bar() +
+        geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust=0.5))
+    # h. Market vs Sales
+      sales %>% group_by(sales$Market) %>% summarise(total_sales = sum(Sales)) %>% arrange(desc(total_sales))
+    # i. Market vs Quantity
+      sales %>% group_by(sales$Market) %>% summarise(total_orders = sum(Quantity)) %>% arrange(desc(total_orders))
+    # j. Market vs Profit
+      sales %>% group_by(sales$Market) %>% summarise(total_profit = sum(Profit)) %>% arrange(desc(total_profit))
+    # l. Market vs Shipping cost
+      sales %>% group_by(sales$Market) %>% summarise(total_shipping_cost = sum(Shipping.Cost)) %>% arrange(desc(total_shipping_cost))
+    # m. Market vs Order priority
+      sales %>%
+        ggplot(aes(Market, fill=Order.Priority)) + geom_bar() +
+        geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust=0.5))
+      
+    ##### 4.2. Category with various attributes ####
+    # a. Category vs Order.Day
+      sales %>%
+        ggplot(aes(Order.Day, fill=Category)) + geom_bar() +
+        geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust=0.5))
+    # b. Category vs Order.Month
+      sales %>%
+        ggplot(aes(Order.Month, fill=Category)) + geom_bar() +
+        geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust=0.5))
+    # c. Category vs Order.Year
+      sales %>%
+        ggplot(aes(Order.Year, fill=Category)) + geom_bar() +
+        geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust=0.5))
+    # d. Category vs Shipping mode
+      sales %>%
+        ggplot(aes(Category, fill=Ship.Mode)) + geom_bar() +
+        geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust=0.5))
+    # e. Category vs Sub Category
+      sales %>%
+        ggplot(aes(Category, fill=Sub.Category)) + geom_bar() +
+        geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust=0.5))
+    # f. Category vs Sales
+      sales %>% group_by(sales$Category) %>% summarise(total_sales = sum(Sales)) %>% arrange(desc(total_sales))
+    # h. Category vs Quantity
+      sales %>% group_by(sales$Category) %>% summarise(total_quantities = sum(Quantity)) %>% arrange(desc(total_quantities))
+    # i. Category vs Discount
+      sales %>% group_by(sales$Category) %>% summarise(total_discounts = sum(Discount)) %>% arrange(desc(total_discounts))
+    # j. Category vs Profit
+      sales %>% group_by(sales$Category) %>% summarise(total_profit = sum(Profit)) %>% arrange(desc(total_profit))
+    # k. Category vs Shipping cost
+      sales %>% group_by(sales$Category) %>% summarise(total_shipping_cost = sum(Shipping.Cost)) %>% arrange(desc(total_shipping_cost))
+    # l. Category vs Order Priority
+      sales %>%
+        ggplot(aes(Category, fill=Order.Priority)) + geom_bar() +
+        geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust=0.5))
+    
 #### 5: Multivariate & Segmented analysis ####
+      # Let's analyse the data by 21 buckets (7 markets * 3 categories)
+        
+      # 1. Find the total transactions of each market by categories
+      # 2. Find the total quantities of each market by categories
+      # 3. Find the total sales of each market by categories
+      # 4. Find the total discount provided for each market by categories
+      # 5. Find the total shipping cost for each market by categories
+      
+#### 6. EDA summary ####
+      
+#### 7. Bucketing for the modal building ####
+      
+#### 8. Modal building ####
+      #### 8.1 Creation of Modal ####
+      #### 8.2 Modal evluation ####
+      
+#### 9. Conclusion ####
+      
 
