@@ -73,11 +73,19 @@
     sales <- sales[order(sales$Order.Date),]
 
 # V. Derive new variables:
-# Split order date into day, month & year
-    sales <- separate(sales, Order.Date, into=c('Order.Year', 'Order.Month', 'Order.Day'), sep = '-', remove = FALSE)
-    sales$Order.Day <- as.integer(sales$Order.Day)
-    sales$Order.Month <- as.integer(sales$Order.Month)
-    sales$Order.Year <- as.integer(sales$Order.Year)
+  # Split order date into day, month & year
+      sales <- separate(sales, Order.Date, into=c('Order.Year', 'Order.Month', 'Order.Day'), sep = '-', remove = FALSE)
+      sales$Order.Day <- as.integer(sales$Order.Day)
+      sales$Order.Month <- as.integer(sales$Order.Month)
+      sales$Order.Year <- as.integer(sales$Order.Year)
+      
+  # Create new column called 'Order.Month.Number' - i.e, month number starting from 1, 2, 3... 12, 13,..24...
+  # 2011th first month = 1
+  # 2011th 12th month = 12
+  # 2012th first month = 13 etc. upto year 2014
+  # this column will be used for the model building
+      start_year <- min(sales$Order.Year)
+      sales$MonthNo <- (sales$Order.Year - start_year) * 12 + sales$Order.Month
     
 # Final data verification
     head(sales)
@@ -145,10 +153,19 @@
         geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust=0.5))
     # h. Market vs Sales
       sales %>% group_by(sales$Market) %>% summarise(total_sales = sum(Sales)) %>% arrange(desc(total_sales))
+      ggplot(sales, aes(x=Market, y=Sales)) + 
+        geom_line(aes(group=Market))+
+        stat_summary(fun.y = sum, color = 'black', geom ='bar')
     # i. Market vs Quantity
       sales %>% group_by(sales$Market) %>% summarise(total_orders = sum(Quantity)) %>% arrange(desc(total_orders))
+      ggplot(sales, aes(x=Market, y=Quantity)) + 
+        geom_line(aes(group=Market))+
+        stat_summary(fun.y = sum, color = 'black', geom ='bar')
     # j. Market vs Profit
       sales %>% group_by(sales$Market) %>% summarise(total_profit = sum(Profit)) %>% arrange(desc(total_profit))
+      ggplot(sales, aes(x=Market, y=Profit)) + 
+        geom_line(aes(group=Market))+
+        stat_summary(fun.y = sum, color = 'black', geom ='bar')
     # l. Market vs Shipping cost
       sales %>% group_by(sales$Market) %>% summarise(total_shipping_cost = sum(Shipping.Cost)) %>% arrange(desc(total_shipping_cost))
     # m. Market vs Order priority
@@ -196,14 +213,61 @@
       # Let's analyse the data by 21 buckets (7 markets * 3 categories)
         
       # 1. Find the total transactions of each market by categories
+        trans_by_market_category <- sales %>% group_by(sales$Market, sales$Category) %>% summarise(total_transactions = n()) %>% arrange(desc(total_transactions))
+        trans_by_market_category
       # 2. Find the total quantities of each market by categories
+        quantities_by_market_category <- sales %>% group_by(sales$Market, sales$Category) %>% summarise(total_quants = sum(Quantity)) %>% arrange(desc(total_quants))
+        quantities_by_market_category
       # 3. Find the total sales of each market by categories
+        sales_by_market_category <- sales %>% group_by(sales$Market, sales$Category) %>% summarise(total_sales = sum(Sales)) %>% arrange(desc(total_sales))
+        sales_by_market_category
       # 4. Find the total discount provided for each market by categories
+        discounts_by_market_category <- sales %>% group_by(sales$Market, sales$Category) %>% summarise(total_discounts = sum(Discount)) %>% arrange(desc(total_discounts))
+        discounts_by_market_category
       # 5. Find the total shipping cost for each market by categories
+        shipping_costs_by_market_category <- sales %>% group_by(sales$Market, sales$Category) %>% summarise(total_shipping_cost = sum(Shipping.Cost)) %>% arrange(desc(total_shipping_cost))
+        shipping_costs_by_market_category
       
 #### 6. EDA summary ####
       
 #### 7. Bucketing for the modal building ####
+        buckets <- sales %>% group_by(sales$MonthNo, sales$Market, sales$Category) %>% summarise(TotalQuantity = sum(Quantity), TotalSales = sum(Sales), TotalProfit = sum(Profit))
+        colnames(buckets) <- c('Month', 'Market', 'Category', 'TotalQuantity',  'TotalSales', 'TotalProfit')
+        buckets
+        
+        africa_tech_sales <- buckets[buckets$Market == 'africa' & buckets$Category == 'technology', ]
+        africa_office_supplies <- buckets[buckets$Market == 'africa' & buckets$Category == 'office supplies', ]
+        africa_furniture <- buckets[buckets$Market == 'africa' & buckets$Category == 'furniture', ]
+        
+        apac_tech_sales <- buckets[buckets$Market == 'apac' & buckets$Category == 'technology', ]
+        apac_office_supplies <- buckets[buckets$Market == 'apac' & buckets$Category == 'office supplies', ]
+        apac_furniture <- buckets[buckets$Market == 'apac' & buckets$Category == 'furniture', ]
+        
+        canada_tech_sales <- buckets[buckets$Market == 'canada' & buckets$Category == 'technology', ]
+        canada_office_supplies <- buckets[buckets$Market == 'canada' & buckets$Category == 'office supplies', ]
+        canada_furniture <- buckets[buckets$Market == 'canada' & buckets$Category == 'furniture', ]
+        
+        emea_tech_sales <- buckets[buckets$Market == 'emea' & buckets$Category == 'technology', ]
+        emea_office_supplies <- buckets[buckets$Market == 'emea' & buckets$Category == 'office supplies', ]
+        emea_furniture <- buckets[buckets$Market == 'emea' & buckets$Category == 'furniture', ]
+        
+        eu_tech_sales <- buckets[buckets$Market == 'eu' & buckets$Category == 'technology', ]
+        eu_office_supplies <- buckets[buckets$Market == 'eu' & buckets$Category == 'office supplies', ]
+        eu_furniture <- buckets[buckets$Market == 'eu' & buckets$Category == 'furniture', ]
+        
+        latam_tech_sales <- buckets[buckets$Market == 'latam' & buckets$Category == 'technology', ]
+        latam_office_supplies <- buckets[buckets$Market == 'latam' & buckets$Category == 'office supplies', ]
+        latam_furniture <- buckets[buckets$Market == 'latam' & buckets$Category == 'furniture', ]
+        
+        us_tech_sales <- buckets[buckets$Market == 'us' & buckets$Category == 'technology', ]
+        us_office_supplies <- buckets[buckets$Market == 'us' & buckets$Category == 'office supplies', ]
+        us_furniture <- buckets[buckets$Market == 'us' & buckets$Category == 'furniture', ]
+        
+        # Plot the time series
+        plot(ts(africa_tech_sales$TotalQuantity))
+        plot(ts(africa_office_supplies$TotalQuantity))
+        plot(ts(africa_furniture$TotalQuantity))
+        
       
 #### 8. Modal building ####
       #### 8.1 Creation of Modal ####
