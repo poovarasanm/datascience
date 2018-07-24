@@ -11,6 +11,7 @@
   install.packages('dplyr')
   install.packages('tidyr')
   install.packages('forecast')
+  install.packages('FinCal') # To find the coefficient.variation
 
 #### load packages ####
   library('dplyr')
@@ -18,6 +19,7 @@
   library('ggplot2')
   library('forecast')
   library('graphics')
+  library('FinCal')
 
 
 #### 1: Data Sourcing & understanding ####
@@ -230,7 +232,7 @@
       
 #### 6. EDA summary ####
       
-#### 7. Bucketing for the modal building ####
+#### 7. Bucketing or segmentation ####
         buckets <- sales %>% group_by(sales$MonthNo, sales$Market, sales$Category) %>% summarise(TotalQuantity = sum(Quantity), TotalSales = sum(Sales), TotalProfit = sum(Profit))
         colnames(buckets) <- c('Month', 'Market', 'Category', 'TotalQuantity',  'TotalSales', 'TotalProfit')
         buckets
@@ -263,16 +265,52 @@
         us_office_supplies <- buckets[buckets$Market == 'us' & buckets$Category == 'office supplies', ]
         us_furniture <- buckets[buckets$Market == 'us' & buckets$Category == 'furniture', ]
         
-        # Plot the time series
-        plot(ts(africa_tech_sales$TotalQuantity))
-        plot(ts(africa_office_supplies$TotalQuantity))
-        plot(ts(africa_furniture$TotalQuantity))
+#### 8. Find the 2 most profitable segments ####
+        markets <- unique(buckets$Market)
+        categories <- unique(buckets$Category)
+        top_cv = 0
+        top_2_cv = 0
+        for(market in markets) {
+          for(category in categories) {
+            current_bucket = buckets[buckets$Market == market & buckets$Category == category, ]
+            current_bucket
+            sdev <- sd(current_bucket$TotalProfit)
+            avg <- mean(current_bucket$TotalProfit)
+            cv <- coefficient.variation(sdev, avg)
+            print(paste("Market=", market, ", Category=", category, ", Coefficient of Variance=", cv))
+            if(cv > top_cv & cv > top_2_cv) {
+              top_cv <- cv
+              top_bucket <- current_bucket
+            }
+            if(cv > top_2_cv & cv < top_cv) {
+              top_2_cv <- cv
+              top_2_bucket <- current_bucket
+            }
+          }
+        }
+        print("Top 2 coefficient of variance values:")
+        top_cv # 3.853189 - emea - furniture
+        top_2_cv # 3.148373 - emea - technology
         
       
-#### 8. Modal building ####
+#### 9. Modal building ####
+        emea_furniture_sales_ts <- ts(top_bucket$TotalSales)
+        plot(emea_furniture_sales_ts)
+        emea_furniture_quantities_ts <- ts(top_bucket$TotalQuantity)
+        plot(emea_furniture_quantities_ts)
+        emea_furniture_profit_ts <- ts(top_bucket$TotalProfit)
+        plot(emea_furniture_profit_ts)
+        
+        emea_tech_sales_ts <- ts(top_2_bucket$TotalSales)
+        plot(emea_tech_sales_ts)
+        emea_tech_quantities_ts <- ts(top_2_bucket$TotalQuantity)
+        plot(emea_tech_quantities_ts)
+        emea_tech_profit_ts <- ts(top_2_bucket$TotalProfit)
+        plot(emea_tech_profit_ts)
+        
       #### 8.1 Creation of Modal ####
       #### 8.2 Modal evluation ####
       
-#### 9. Conclusion ####
+#### 10. Conclusion ####
       
 
