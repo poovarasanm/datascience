@@ -233,68 +233,38 @@
 #### 6. EDA summary ####
       
 #### 7. Bucketing or segmentation ####
-        buckets <- sales %>% group_by(sales$MonthNo, sales$Market, sales$Category) %>% summarise(TotalQuantity = sum(Quantity), TotalSales = sum(Sales), TotalProfit = sum(Profit))
-        colnames(buckets) <- c('Month', 'Market', 'Category', 'TotalQuantity',  'TotalSales', 'TotalProfit')
+        buckets <- sales %>% group_by(sales$MonthNo, sales$Market, sales$Segment) %>% summarise(TotalQuantity = sum(Quantity), TotalSales = sum(Sales), TotalProfit = sum(Profit))
+        colnames(buckets) <- c('Month', 'Market', 'Segment', 'TotalQuantity',  'TotalSales', 'TotalProfit')
         buckets
-        
-        africa_tech_sales <- buckets[buckets$Market == 'africa' & buckets$Category == 'technology', ]
-        africa_office_supplies <- buckets[buckets$Market == 'africa' & buckets$Category == 'office supplies', ]
-        africa_furniture <- buckets[buckets$Market == 'africa' & buckets$Category == 'furniture', ]
-        
-        apac_tech_sales <- buckets[buckets$Market == 'apac' & buckets$Category == 'technology', ]
-        apac_office_supplies <- buckets[buckets$Market == 'apac' & buckets$Category == 'office supplies', ]
-        apac_furniture <- buckets[buckets$Market == 'apac' & buckets$Category == 'furniture', ]
-        
-        canada_tech_sales <- buckets[buckets$Market == 'canada' & buckets$Category == 'technology', ]
-        canada_office_supplies <- buckets[buckets$Market == 'canada' & buckets$Category == 'office supplies', ]
-        canada_furniture <- buckets[buckets$Market == 'canada' & buckets$Category == 'furniture', ]
-        
-        emea_tech_sales <- buckets[buckets$Market == 'emea' & buckets$Category == 'technology', ]
-        emea_office_supplies <- buckets[buckets$Market == 'emea' & buckets$Category == 'office supplies', ]
-        emea_furniture <- buckets[buckets$Market == 'emea' & buckets$Category == 'furniture', ]
-        
-        eu_tech_sales <- buckets[buckets$Market == 'eu' & buckets$Category == 'technology', ]
-        eu_office_supplies <- buckets[buckets$Market == 'eu' & buckets$Category == 'office supplies', ]
-        eu_furniture <- buckets[buckets$Market == 'eu' & buckets$Category == 'furniture', ]
-        
-        latam_tech_sales <- buckets[buckets$Market == 'latam' & buckets$Category == 'technology', ]
-        latam_office_supplies <- buckets[buckets$Market == 'latam' & buckets$Category == 'office supplies', ]
-        latam_furniture <- buckets[buckets$Market == 'latam' & buckets$Category == 'furniture', ]
-        
-        us_tech_sales <- buckets[buckets$Market == 'us' & buckets$Category == 'technology', ]
-        us_office_supplies <- buckets[buckets$Market == 'us' & buckets$Category == 'office supplies', ]
-        us_furniture <- buckets[buckets$Market == 'us' & buckets$Category == 'furniture', ]
         
 #### 8. Find the 2 most profitable segments ####
         markets <- unique(buckets$Market)
-        categories <- unique(buckets$Category)
+        segments <- unique(buckets$Segment)
         top_cv = 0
         top_2_cv = 0
         for(market in markets) {
-          for(category in categories) {
-            current_bucket = buckets[buckets$Market == market & buckets$Category == category, ]
-            current_bucket
+          for(segment in segments) {
+            current_bucket <- buckets[buckets$Market == market & buckets$Segment == segment, ]
             sdev <- sd(current_bucket$TotalProfit)
             avg <- mean(current_bucket$TotalProfit)
             cv <- coefficient.variation(sdev, avg)
-            print(paste("Market=", market, ", Category=", category, ", Coefficient of Variance=", cv))
-            if(cv > top_cv & cv > top_2_cv) {
+            print(paste("Market=", market, ", Segment=", segment, ", Coefficient of Variance=", cv))
+            
+            if(cv > top_cv) {
+              top_2_cv <- top_cv
+              top_2_bucket <- top_bucket
               top_cv <- cv
               top_bucket <- current_bucket
-            }
-            if(cv > top_2_cv & cv < top_cv) {
-              top_2_cv <- cv
-              top_2_bucket <- current_bucket
             }
           }
         }
         print("Top 2 coefficient of variance values:")
-        top_cv # 3.853189 - emea - furniture
-        top_2_cv # 3.148373 - emea - technology
+        top_cv # 5.880747 - emea - home office
+        top_2_cv # 4.467102 - emea - corporate
         
       
 #### 9. Modal building ####
-        emea_furniture_sales_ts <- ts(top_bucket$TotalSales)
+        ''' emea_furniture_sales_ts <- ts(top_bucket$TotalSales)
         plot(emea_furniture_sales_ts)
         emea_furniture_quantities_ts <- ts(top_bucket$TotalQuantity)
         plot(emea_furniture_quantities_ts)
@@ -306,7 +276,7 @@
         emea_tech_quantities_ts <- ts(top_2_bucket$TotalQuantity)
         plot(emea_tech_quantities_ts)
         emea_tech_profit_ts <- ts(top_2_bucket$TotalProfit)
-        plot(emea_tech_profit_ts)
+        plot(emea_tech_profit_ts) '''
         
       #### 8.1 Creation of Modal ####
       #### 8.2 Modal evluation ####
