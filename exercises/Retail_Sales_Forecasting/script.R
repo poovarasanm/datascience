@@ -109,19 +109,13 @@
     sales %>% ggplot(aes(sales$Order.Month)) + geom_bar() # No. of transactions per Month
     sales %>% ggplot(aes(sales$Order.Year)) + geom_bar() # No. of trans. per year
     sales %>% ggplot(aes(sales$Ship.Date)) + geom_bar() # No. of shipping per date
-    sales %>% ggplot(aes(sales$Ship.Mode)) + geom_bar() # Shipping mode counts
     sales %>% ggplot(aes(sales$Segment)) + geom_bar() # No. of trans per segment
     sales %>% ggplot(aes(sales$Market)) + geom_bar() # No. of trans per market
-    sales %>% ggplot(aes(sales$Region)) + geom_bar() # No. of trans per region
-    sales %>% ggplot(aes(sales$Category)) + geom_bar() # No. of trans per category
-    sales %>% ggplot(aes(sales$Sub.Category)) + geom_bar() # No. of trans per sub category
-    sales %>% ggplot(aes(sales$Order.Priority)) + geom_bar() # No. of trans per priority
 
 # c. Continuous variables
     sales %>% ggplot(aes(sales$Quantity)) + geom_histogram(stat="count")
     sales %>% ggplot(aes(sales$Discount)) + geom_histogram(stat="count")
     sales %>% ggplot(aes(sales$Shipping.Cost)) + geom_histogram(stat="count")
-    # Sales, Quantity & Profit are taking long time to draw the plots, so skipping it for now
 
 #### 4: Bivariate analysis ####
     #### 4.1. Market with various attributes ####
@@ -137,43 +131,25 @@
       sales %>%
         ggplot(aes(Order.Year, fill=Market)) + geom_bar() +
         geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust=0.5))
-    # d. Market vs shipping mode
-      sales %>%
-        ggplot(aes(Market, fill=Ship.Mode)) + geom_bar() +
-        geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust=0.5))
-    # e. Market vs Segment
+    # d. Market vs Segment
       sales %>%
         ggplot(aes(Market, fill=Segment)) + geom_bar() +
         geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust=0.5))
-    # f. Market vs Category
-      sales %>%
-        ggplot(aes(Market, fill=Category)) + geom_bar() +
-        geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust=0.5))
-    # g. Market vs Sub. Category
-      sales %>%
-        ggplot(aes(Market, fill=Sub.Category)) + geom_bar() +
-        geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust=0.5))
-    # h. Market vs Sales
+    # e. Market vs Sales
       sales %>% group_by(sales$Market) %>% summarise(total_sales = sum(Sales)) %>% arrange(desc(total_sales))
       ggplot(sales, aes(x=Market, y=Sales)) + 
         geom_line(aes(group=Market))+
         stat_summary(fun.y = sum, color = 'black', geom ='bar')
-    # i. Market vs Quantity
+    # f. Market vs Quantity
       sales %>% group_by(sales$Market) %>% summarise(total_orders = sum(Quantity)) %>% arrange(desc(total_orders))
       ggplot(sales, aes(x=Market, y=Quantity)) + 
         geom_line(aes(group=Market))+
         stat_summary(fun.y = sum, color = 'black', geom ='bar')
-    # j. Market vs Profit
+    # g. Market vs Profit
       sales %>% group_by(sales$Market) %>% summarise(total_profit = sum(Profit)) %>% arrange(desc(total_profit))
       ggplot(sales, aes(x=Market, y=Profit)) + 
         geom_line(aes(group=Market))+
         stat_summary(fun.y = sum, color = 'black', geom ='bar')
-    # l. Market vs Shipping cost
-      sales %>% group_by(sales$Market) %>% summarise(total_shipping_cost = sum(Shipping.Cost)) %>% arrange(desc(total_shipping_cost))
-    # m. Market vs Order priority
-      sales %>%
-        ggplot(aes(Market, fill=Order.Priority)) + geom_bar() +
-        geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust=0.5))
       
     ##### 4.2. Category with various attributes ####
     # a. Category vs Order.Day
@@ -198,85 +174,68 @@
         geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust=0.5))
     # f. Category vs Sales
       sales %>% group_by(sales$Category) %>% summarise(total_sales = sum(Sales)) %>% arrange(desc(total_sales))
-    # h. Category vs Quantity
+    # g. Category vs Quantity
       sales %>% group_by(sales$Category) %>% summarise(total_quantities = sum(Quantity)) %>% arrange(desc(total_quantities))
-    # i. Category vs Discount
+    # h. Category vs Discount
       sales %>% group_by(sales$Category) %>% summarise(total_discounts = sum(Discount)) %>% arrange(desc(total_discounts))
-    # j. Category vs Profit
+    # i. Category vs Profit
       sales %>% group_by(sales$Category) %>% summarise(total_profit = sum(Profit)) %>% arrange(desc(total_profit))
-    # k. Category vs Shipping cost
-      sales %>% group_by(sales$Category) %>% summarise(total_shipping_cost = sum(Shipping.Cost)) %>% arrange(desc(total_shipping_cost))
-    # l. Category vs Order Priority
-      sales %>%
-        ggplot(aes(Category, fill=Order.Priority)) + geom_bar() +
-        geom_text(stat = 'count', aes(label = ..count..), position = position_stack(vjust=0.5))
     
 #### 5: Multivariate & Segmented analysis ####
-      # Let's analyse the data by 21 buckets (7 markets * 3 categories)
+      # Let's analyse the data by 21 subsets (7 markets * 3 segment)
         
-      # 1. Find the total transactions of each market by categories
-        trans_by_market_category <- sales %>% group_by(sales$Market, sales$Category) %>% summarise(total_transactions = n()) %>% arrange(desc(total_transactions))
-        trans_by_market_category
-      # 2. Find the total quantities of each market by categories
-        quantities_by_market_category <- sales %>% group_by(sales$Market, sales$Category) %>% summarise(total_quants = sum(Quantity)) %>% arrange(desc(total_quants))
-        quantities_by_market_category
-      # 3. Find the total sales of each market by categories
-        sales_by_market_category <- sales %>% group_by(sales$Market, sales$Category) %>% summarise(total_sales = sum(Sales)) %>% arrange(desc(total_sales))
-        sales_by_market_category
-      # 4. Find the total discount provided for each market by categories
-        discounts_by_market_category <- sales %>% group_by(sales$Market, sales$Category) %>% summarise(total_discounts = sum(Discount)) %>% arrange(desc(total_discounts))
-        discounts_by_market_category
-      # 5. Find the total shipping cost for each market by categories
-        shipping_costs_by_market_category <- sales %>% group_by(sales$Market, sales$Category) %>% summarise(total_shipping_cost = sum(Shipping.Cost)) %>% arrange(desc(total_shipping_cost))
-        shipping_costs_by_market_category
+      # 1. Find the total transactions of each market by segment
+        market_segment_summary <- sales %>%
+          group_by(sales$Market, sales$Segment) %>%
+          summarise(Transactions = n(),
+                    Quantities = sum(Quantity),
+                    Sales= sum(Sales),
+                    Profit = sum(Profit)) %>%
+          arrange(desc(Profit))
+        colnames(market_segment_summary) <- c('Market', 'Segment', 'TotalOrders', 'TotalQuantities', 'TotalSales', 'TotalProfit')
+        market_segment_summary
       
 #### 6. EDA summary ####
-      
-#### 7. Bucketing or segmentation ####
-        buckets <- sales %>% group_by(sales$MonthNo, sales$Market, sales$Segment) %>% summarise(TotalQuantity = sum(Quantity), TotalSales = sum(Sales), TotalProfit = sum(Profit))
-        colnames(buckets) <- c('Month', 'Market', 'Segment', 'TotalQuantity',  'TotalSales', 'TotalProfit')
-        buckets
+        # 1. Top 2 profitable segments are consumer
+        # 2. Top 2 profitable segments are APAC & EU
         
-#### 8. Find the 2 most profitable segments ####
+#### 7. Find the 2 most profitable segments using CV ####
+        
+        buckets <- sales %>%
+          group_by(sales$MonthNo, sales$Market, sales$Segment) %>%
+          summarise(Transactions = n(),
+                    Quantities = sum(Quantity),
+                    Sales= sum(Sales),
+                    Profit = sum(Profit))
+        colnames(buckets) <- c('MonthNo', 'Market', 'Segment', 'TotalOrders', 'TotalQuantities', 'TotalSales', 'TotalProfit')
         markets <- unique(buckets$Market)
         segments <- unique(buckets$Segment)
-        top_cv = 0
-        top_2_cv = 0
+        top_cv = 100
+        top_2_cv = 100
+        top_bucket = NA
+        top_2_bucket = NA
         for(market in markets) {
           for(segment in segments) {
             current_bucket <- buckets[buckets$Market == market & buckets$Segment == segment, ]
             sdev <- sd(current_bucket$TotalProfit)
             avg <- mean(current_bucket$TotalProfit)
-            cv <- coefficient.variation(sdev, avg)
-            print(paste("Market=", market, ", Segment=", segment, ", Coefficient of Variance=", cv))
+            cv <- sdev/avg
+            print(paste("Market=", market, ", Segment=", segment, ", Coefficient of Variance=", cv, top_cv, top_2_cv))
             
-            if(cv > top_cv) {
-              top_2_cv <- top_cv
-              top_2_bucket <- top_bucket
-              top_cv <- cv
-              top_bucket <- current_bucket
+            if(cv < top_2_cv) {
+              top_cv <- top_2_cv
+              top_bucket <- top_2_bucket
+              top_2_cv <- cv
+              top_2_bucket <- current_bucket
             }
           }
         }
         print("Top 2 coefficient of variance values:")
-        top_cv # 5.880747 - emea - home office
-        top_2_cv # 4.467102 - emea - corporate
+        top_cv # 0.6321323 - APAC - consumer
+        top_2_cv # 0.6243052 - EU - consumer
         
       
 #### 9. Modal building ####
-        ''' emea_furniture_sales_ts <- ts(top_bucket$TotalSales)
-        plot(emea_furniture_sales_ts)
-        emea_furniture_quantities_ts <- ts(top_bucket$TotalQuantity)
-        plot(emea_furniture_quantities_ts)
-        emea_furniture_profit_ts <- ts(top_bucket$TotalProfit)
-        plot(emea_furniture_profit_ts)
-        
-        emea_tech_sales_ts <- ts(top_2_bucket$TotalSales)
-        plot(emea_tech_sales_ts)
-        emea_tech_quantities_ts <- ts(top_2_bucket$TotalQuantity)
-        plot(emea_tech_quantities_ts)
-        emea_tech_profit_ts <- ts(top_2_bucket$TotalProfit)
-        plot(emea_tech_profit_ts) '''
         
       #### 8.1 Creation of Modal ####
       #### 8.2 Modal evluation ####
